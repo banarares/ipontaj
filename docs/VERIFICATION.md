@@ -2,7 +2,7 @@
 
 ## Verificat local
 
-- **136 teste PHP, 917 aserțiuni: trecute**, atât pe SQLite, cât și pe MySQL 8.0.46 local, izolat.
+- **139 teste PHP, 974 aserțiuni: trecute**, pe SQLite. Ultima execuție locală MySQL 8.0.46 a verificat 136 de teste și 917 aserțiuni; matricea GitHub verifică versiunea curentă pe cele trei motoare.
 - PHPStan/Larastan, nivel 7: fără erori.
 - Verificare TypeScript Vue: trecută.
 - Testele frontend ale estimatorului de parolă: trecute.
@@ -73,3 +73,7 @@ Footerul grupează linkurile ANPC, SAL, Consumer Redress în UE și ANSPDCP cu i
 Utilitarul privat cPanel a creat un snapshot SQLite consistent, a construit schema din migrările Laravel într-un MySQL temporar și a verificat conținutul celor 25 de tabele după transfer și restaurare. Au fost verificate separat exportul nativ MySQL și restaurarea sa, pe toate cele 25 de tabele, inclusiv metadatele de migrare. Originalul rămâne complet; numai copia pentru deploy golește sesiunile, cache-ul, resetările și cozile vechi. Arhiva aplicației include buildul și vendorul PHP fără dependențe de dezvoltare. Configurația secretă, scripturile locale și rezultatele sunt excluse din sursa distribuită. Nu este un exercițiu pe infrastructura resellerului.
 
 Scanarea istoricului existent a acoperit 8 commituri, 4 arbori și 135 de bloburi distincte, fără potriviri pentru tiparele de acreditări verificate. Scannerul pentru publicare verifică separat căile private, conținutul indexului Git și eventualele valori configurate local, fără a afișa valorile. Cinci teste automate cu date sintetice verifică aceste controale. Auditurile Composer și npm nu au raportat vulnerabilități cunoscute la data verificării.
+
+## Texte pentru publicare
+
+Versiunea juridică `2026-11-24.2` elimină notele temporare din textele publice și adaugă GitHub la pagina Licență, alături de arhiva locală a sursei. Testele verifică păstrarea integrală a dovezilor versiunii precedente, refuzul cheilor Stripe live și diferențierea checkoutului demonstrativ. Bannerul public a fost eliminat independent de verificările de pregătire a infrastructurii, care rămân active.

@@ -1,7 +1,6 @@
 export type LegalData = {
     version: string;
     date: string;
-    approved: boolean;
     operator: {
         name: string;
         cif: string;

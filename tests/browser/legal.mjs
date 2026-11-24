@@ -121,6 +121,17 @@ try {
     await page
         .getByRole('heading', { name: 'Confidențialitate', exact: true })
         .waitFor();
+    assert.equal(await page.locator('.legal-draft-notice').count(), 0);
+    assert.equal(
+        await page
+            .getByText('Pregătire pentru lansare.', { exact: false })
+            .count(),
+        0,
+    );
+    assert.equal(
+        await page.getByText('În curs de confirmare', { exact: false }).count(),
+        0,
+    );
     await page.screenshot({ path: 'docs/screenshots/legal-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(
@@ -130,6 +141,22 @@ try {
         'Documentele trebuie să încapă pe mobil.',
     );
     await page.screenshot({ path: 'docs/screenshots/legal-mobile.png' });
+    await page.goto(base + '/licenta');
+    const repository = page.getByRole('link', {
+        name: 'Vezi codul iPontaj și instrucțiunile pentru colaboratori',
+        exact: true,
+    });
+    assert.equal(
+        await repository.getAttribute('href'),
+        'https://github.com/banarares/ipontaj',
+    );
+    assert.equal(
+        await page
+            .getByRole('link', { name: 'Descarcă sursa iPontaj', exact: true })
+            .getAttribute('href'),
+        '/cod-sursa',
+    );
+    await page.screenshot({ path: 'docs/screenshots/license-mobile.png' });
     await page.goto(base + '/retragere');
     await page.getByLabel('Nume', { exact: true }).fill('Fictiv');
     await page.getByLabel('Prenume', { exact: true }).fill('Consumator');

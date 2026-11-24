@@ -10,6 +10,7 @@ use App\Notifications\LegalContractConfirmed;
 use App\Notifications\LegalRequestReceived;
 use App\Services\LegalAgreements;
 use App\Services\LegalDocuments;
+use App\Services\LegalReadiness;
 use App\Services\SourceArchive;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -70,6 +71,40 @@ class LegalTest extends TestCase
         $this->assertFalse($acceptance->facts['operator']['vat_registered']);
         $this->get('/acorduri/'.$acceptance->id)->assertOk()->assertSee('SHA-256')->assertSee('49 lei/lună');
         $this->actingAs(User::factory()->create())->get('/acorduri/'.$acceptance->id)->assertNotFound();
+    }
+
+    public function test_public_document_copy_has_no_launch_notes_and_license_links_to_repository_and_release_source(): void
+    {
+        $documents = app(LegalDocuments::class);
+        foreach (array_keys($documents->index()) as $slug) {
+            $text = $documents->text($slug);
+            $this->assertDoesNotMatchRegularExpression('/pregătire pentru lansare|înainte de lansare|propusă pentru lansare|rămân în verificare|încasările reale rămân dezactivate/ui', $text);
+        }
+        $license = $this->get('/documente/licenta')->assertOk();
+        $license->assertSee('https://github.com/banarares/ipontaj', false)->assertSee('/cod-sursa');
+        // Editing public copy does not approve infrastructure or enable real payments.
+        $this->assertFalse(config('legal.publication_approved'));
+        $this->assertNotEmpty(app(LegalReadiness::class)->blockers());
+    }
+
+    public function test_previous_contract_snapshot_stays_downloadable_after_public_document_version_changes(): void
+    {
+        $currentVersion = config('legal.version');
+        $this->assertNotSame('2026-11-24.1', $currentVersion);
+        config(['legal.version' => '2026-11-24.1']);
+        $user = User::factory()->create();
+        $agreements = app(LegalAgreements::class);
+        $previous = $agreements->record($user, 'account', ['termeni-si-conditii', 'confidentialitate']);
+        $oldText = $previous->documents['termeni-si-conditii']['text'];
+        $oldHash = $previous->documents['termeni-si-conditii']['sha256'];
+        config(['legal.version' => $currentVersion]);
+
+        $this->assertFalse($agreements->hasAccountAgreement($user));
+        $this->assertNotSame($oldText, app(LegalDocuments::class)->text('termeni-si-conditii'));
+        $this->actingAs($user)->get('/acorduri/'.$previous->id)->assertOk()->assertSee($oldText, false)->assertSee($oldHash);
+        $previous->refresh();
+        $this->assertSame(hash('sha256', $oldText), $previous->documents['termeni-si-conditii']['sha256']);
+        $this->assertSame($oldText, file_get_contents(resource_path('legal/2026-11-24.1/termeni-si-conditii.md')));
     }
 
     public function test_business_requires_dpa_and_consumer_can_create_without_cif_or_professional_authority(): void

@@ -81,6 +81,17 @@ class BillingTest extends TestCase
         $this->actingAs($user)->post('/billing/checkout')->assertStatus(503);
     }
 
+    public function test_billing_page_exposes_demonstration_mode_without_exposing_secret_or_offering_blocked_live_checkout(): void
+    {
+        [$user] = $this->company();
+        $this->withoutVite();
+        $this->actingAs($user)->get('/billing')->assertOk()->assertInertia(fn ($page) => $page->where('billingTestMode', true)->where('billingReady', true));
+        config(['cashier.secret' => 'sk_live_fixture']);
+        $this->get('/billing')->assertOk()->assertInertia(fn ($page) => $page->where('billingTestMode', false)->where('billingReady', false));
+        config(['ipontaj.billing_enabled' => false]);
+        $this->get('/billing')->assertOk()->assertInertia(fn ($page) => $page->where('billingEnabled', false)->where('billingReady', false));
+    }
+
     public function test_consumer_checkout_requires_explicit_early_start_request_without_waiving_withdrawal(): void
     {
         [$user, $company] = $this->company();

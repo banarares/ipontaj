@@ -47,18 +47,6 @@ function printDocument() {
                 </nav>
             </aside>
             <div class="legal-main">
-                <div
-                    v-if="!legal.approved"
-                    class="legal-draft-notice"
-                    role="note"
-                >
-                    <Icon name="alert" :size="21" />
-                    <p>
-                        Pregătire pentru lansare. Detaliile contractuale ale
-                        infrastructurii și procedurile operaționale sunt în
-                        verificare. Plățile reale nu sunt activate.
-                    </p>
-                </div>
                 <article id="legal-document" class="legal-card" tabindex="-1">
                     <div class="legal-document-icon">
                         <Icon :name="document.icon" :size="26" />
@@ -123,7 +111,7 @@ function printDocument() {
                         "
                         class="legal-infrastructure"
                     >
-                        <h2>Infrastructura declarată</h2>
+                        <h2>Infrastructură și păstrarea datelor</h2>
                         <dl>
                             <dt>Furnizor</dt>
                             <dd>
@@ -136,37 +124,36 @@ function printDocument() {
                             </dd>
                             <dt>Servicii</dt>
                             <dd>{{ legal.hosting.services }}</dd>
-                            <dt>Entitate contractuală</dt>
-                            <dd>
-                                {{
-                                    legal.hosting.contract_entity ||
-                                    'În curs de confirmare pentru contul reseller'
-                                }}
-                            </dd>
-                            <dt>Locațiile datelor</dt>
-                            <dd>
-                                {{
-                                    legal.hosting.data_location ||
-                                    'În curs de confirmare contractuală'
-                                }}
-                            </dd>
-                            <dt>Retenția backupurilor</dt>
-                            <dd>
-                                {{
-                                    legal.hosting.backup_retention_days
-                                        ? `${legal.hosting.backup_retention_days} zile`
-                                        : 'În curs de confirmare pentru pachetul utilizat'
-                                }}
-                            </dd>
-                            <dt>Retenția logurilor</dt>
-                            <dd>
-                                {{
-                                    legal.retention.log_days
-                                        ? `${legal.retention.log_days} zile`
-                                        : 'Planul trebuie confirmat și aplicat înainte de lansare'
-                                }}
-                            </dd>
+                            <template v-if="legal.hosting.contract_entity">
+                                <dt>Entitate contractuală</dt>
+                                <dd>{{ legal.hosting.contract_entity }}</dd>
+                            </template>
+                            <template v-if="legal.hosting.data_location">
+                                <dt>Locațiile datelor</dt>
+                                <dd>{{ legal.hosting.data_location }}</dd>
+                            </template>
+                            <template
+                                v-if="legal.hosting.backup_retention_days"
+                            >
+                                <dt>Păstrarea backupurilor</dt>
+                                <dd>
+                                    {{ legal.hosting.backup_retention_days }}
+                                    zile
+                                </dd>
+                            </template>
+                            <template v-if="legal.retention.log_days">
+                                <dt>Păstrarea logurilor</dt>
+                                <dd>{{ legal.retention.log_days }} zile</dd>
+                            </template>
                         </dl>
+                        <p>
+                            Pentru detalii suplimentare despre infrastructură
+                            sau păstrarea datelor, scrie la
+                            <a :href="`mailto:${legal.operator.email}`">{{
+                                legal.operator.email
+                            }}</a
+                            >.
+                        </p>
                     </section>
                     <section
                         v-if="document.slug === 'cookies'"

@@ -3772,24 +3772,6 @@ button {
     color: #176f56;
     text-decoration: underline;
 }
-.legal-draft-notice {
-    background: #fff8e9;
-    color: #725c2e;
-    border: 1px solid #eadcb8;
-    padding: 16px 18px;
-    border-radius: 9px;
-    display: flex;
-    gap: 12px;
-    margin-bottom: 18px;
-}
-.legal-draft-notice svg {
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-.legal-draft-notice p {
-    font-size: 14px;
-    line-height: 1.7;
-}
 .legal-prose {
     font-size: 16px;
     line-height: 1.85;
@@ -4015,7 +3997,6 @@ button {
     .legal-page > header,
     .legal-document-meta a,
     .legal-document-meta button,
-    .legal-draft-notice,
     .legal-request-form {
         display: none;
     }

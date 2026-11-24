@@ -46,6 +46,7 @@ class WorkspaceController extends Controller
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
         $month = $date ? substr($date, 0, 7) : ($request->input('month') ?: substr($today, 0, 7));
         $date ??= $month === substr($today, 0, 7) ? $today : $month.'-01';
+        $billingTestMode = config('ipontaj.billing_enabled') && str_starts_with((string) config('cashier.secret'), 'sk_test_');
         $summary = $owner ? $this->attendance->summary($company, $month) : null;
         $members = $owner ? $company->memberships()->with('user')->get() : collect([$member->load('user')]);
         $entries = $company->entries()->with('intervals')->whereDate('date', '>=', $month.'-01')->whereDate('date', '<=', Carbon::parse($month.'-01')->endOfMonth()->toDateString())->when(! $owner, fn ($q) => $q->where('membership_id', $member->id))->get();
@@ -57,7 +58,7 @@ class WorkspaceController extends Controller
             'invitations' => $owner ? $company->invitations()->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now())->get() : [],
             'closure' => MonthClosure::where('company_id', $company->id)->where('month', $month)->first(),
             'audit' => $owner ? AuditEvent::with('user:id,first_name,last_name,name')->where('company_id', $company->id)->latest()->limit(20)->get() : [],
-            'seatLimit' => $company->seatLimit(), 'occupiedSeats' => $company->occupiedSeats(), 'billingEnabled' => config('ipontaj.billing_enabled'), 'billingReady' => config('ipontaj.billing_enabled') && filled(config('cashier.secret')) && filled(config('ipontaj.stripe_team_price')), 'subscribed' => $company->subscribed('default'), 'absences' => AttendanceService::ABSENCES,
+            'seatLimit' => $company->seatLimit(), 'occupiedSeats' => $company->occupiedSeats(), 'billingEnabled' => config('ipontaj.billing_enabled'), 'billingReady' => $billingTestMode && filled(config('ipontaj.stripe_team_price')), 'billingTestMode' => $billingTestMode, 'subscribed' => $company->subscribed('default'), 'absences' => AttendanceService::ABSENCES,
         ]);
     }
 

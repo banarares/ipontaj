@@ -210,8 +210,8 @@ function demo() {
                 </div>
                 <p class="hint" style="text-align: center">
                     Preț final: 49 lei/lună. Operator neînregistrat în scopuri
-                    de TVA. Abonamentul este în pregătire; încasările reale vor
-                    fi activate după configurarea fiscală.
+                    de TVA. Planul Gratuit nu necesită card. Disponibilitatea
+                    abonamentului Echipă este afișată în cont.
                 </p>
             </section>
             <section class="public-section">

@@ -44,6 +44,7 @@ const props = defineProps<{
     occupiedSeats: number;
     billingEnabled: boolean;
     billingReady: boolean;
+    billingTestMode: boolean;
     subscribed: boolean;
     absences: Record<string, string>;
 }>();
@@ -2065,11 +2066,12 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                     >
                         <Icon name="shield" />
                         <div>
-                            <strong>Mod pentru instalare proprie</strong>
+                            <strong>Accesul echipei tale</strong>
                             <p>
-                                Facturarea este dezactivată. Limita configurată
-                                este de {{ seatLimit }} persoane. Istoricul,
-                                autorizarea și exporturile sunt disponibile.
+                                Ai acces la pontaj pentru până la
+                                {{ seatLimit }}
+                                persoane active. Poți folosi istoricul,
+                                confirmările și exporturile echipei.
                             </p>
                         </div>
                     </div>
@@ -2079,11 +2081,27 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                     >
                         <Icon name="card" />
                         <div>
-                            <strong>Plățile sunt în pregătire</strong>
+                            <strong
+                                >Abonamentul Echipă nu este disponibil
+                                momentan</strong
+                            >
                             <p>
-                                Checkoutul de test necesită cheile Stripe și
-                                prețul configurat. Nu se procesează încasări
-                                reale.
+                                Poți continua să folosești planul actual. Pentru
+                                informații despre abonamente, scrie la
+                                office@ipontaj.ro.
+                            </p>
+                        </div>
+                    </div>
+                    <div
+                        v-else-if="billingTestMode"
+                        class="info-note billing-notice"
+                    >
+                        <Icon name="card" />
+                        <div>
+                            <strong>Plată demonstrativă</strong>
+                            <p>
+                                Acest flux simulează un abonament. Nu se
+                                debitează bani reali.
                             </p>
                         </div>
                     </div>
@@ -2250,16 +2268,16 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                                 {{
                                     subscribed
                                         ? 'Gestionează abonamentul'
-                                        : 'Încearcă plata în modul de test'
+                                        : 'Alege planul Echipă'
                                 }}
                             </button>
                         </article>
                     </div>
                     <p class="hint">
                         Preț final: 49 lei/lună. Operator neînregistrat în
-                        scopuri de TVA. Facturarea fiscală trebuie configurată
-                        înainte de activarea încasărilor reale. Plata este
-                        confirmată doar după evenimente Stripe verificate.
+                        scopuri de TVA. Abonamentul se reînnoiește lunar și
+                        poate fi anulat din cont. Pentru facturi sau asistență,
+                        contactează office@ipontaj.ro.
                     </p>
                     <button
                         v-if="billingReady && subscribed"

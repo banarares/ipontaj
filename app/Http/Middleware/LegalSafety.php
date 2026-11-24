@@ -16,7 +16,7 @@ class LegalSafety
         if (app()->isProduction()) {
             Vite::useCspNonce();
             if ($request->isMethod('post') && $request->is('register', 'companies', 'billing/checkout')) {
-                abort_if(app(LegalReadiness::class)->blockers() !== [], 503, 'Serviciul este în pregătire pentru lansare. Contact: office@ipontaj.ro.');
+                abort_if(app(LegalReadiness::class)->blockers() !== [], 503, 'Serviciul nu este disponibil momentan. Pentru asistență: office@ipontaj.ro.');
             }
             $user = $request->user();
             if ($user && ! $user->is_demo && $request->is('dashboard', 'today', 'history', 'team', 'month', 'settings', 'billing', 'entries*', 'invitations*', 'schedules', 'members/*', 'months/*', 'company/*')) {

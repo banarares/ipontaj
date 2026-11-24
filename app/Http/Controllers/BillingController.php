@@ -17,7 +17,7 @@ class BillingController extends Controller
         $company = $context->owner($request);
         abort_if($company->is_demo, 403);
         abort_unless(config('ipontaj.billing_enabled') && config('cashier.secret') && config('ipontaj.stripe_team_price'), 503, 'Plata nu este configurată.');
-        abort_unless(str_starts_with(config('cashier.secret'), 'sk_test_'), 503, 'Încasările reale necesită configurarea comercială și fiscală.');
+        abort_unless(str_starts_with(config('cashier.secret'), 'sk_test_'), 503, 'Abonamentele nu sunt disponibile momentan. Contact: office@ipontaj.ro.');
 
         return $company;
     }

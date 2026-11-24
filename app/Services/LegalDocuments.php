@@ -60,7 +60,6 @@ class LegalDocuments
     {
         return [
             ...$this->facts(), 'version' => config('legal.version'), 'date' => config('legal.date'),
-            'approved' => (bool) config('legal.publication_approved'),
             'session_minutes' => (int) config('session.lifetime'),
             'remember_days' => 400,
             'links' => collect($this->index())->map(fn ($item, $slug) => [...$item, 'href' => '/'.$slug])->values()->all(),
