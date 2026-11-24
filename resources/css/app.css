@@ -3039,6 +3039,7 @@ button {
     }
     .hero-actions {
         gap: 9px;
+        flex-wrap: wrap;
     }
     .hero-actions .button {
         font-size: 11px;
@@ -3510,9 +3511,7 @@ button {
     flex-direction: column;
     gap: 10px;
 }
-.legal-footer-links a,
-.legal-authorities > a,
-.sal-text-link {
+.legal-footer-links a {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3524,13 +3523,70 @@ button {
 .legal-authorities {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 17px;
+    align-items: stretch;
+    min-width: 0;
+    gap: 14px;
 }
-.legal-authorities img {
+.authority-links {
+    display: grid;
+    grid-auto-rows: 1fr;
+    gap: 8px;
+}
+.legal-footer .authority-link {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 14px;
+    align-items: center;
+    gap: 10px;
+    min-height: 66px;
+    padding: 10px;
+    border: 1px solid #e1e9dc;
+    border-radius: 8px;
+    background: #fff;
+    text-decoration: none;
+}
+.legal-footer .authority-link:hover {
+    border-color: #acc9b6;
+    background: #f4f8f0;
+    text-decoration: none;
+}
+.authority-icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: #edf4e9;
+    color: #176f56;
+}
+.authority-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.authority-copy strong {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+.authority-copy small {
+    color: #637467;
+    font-size: 11px;
+    line-height: 1.5;
+}
+.authority-external {
+    display: flex;
+    color: #6d8475;
+}
+.authority-sal-link {
+    display: block;
+    align-self: flex-start;
+}
+.authority-sal-link img {
+    display: block;
     width: 250px;
     height: 50px;
     object-fit: contain;
+    object-position: left center;
 }
 .legal-authorities p {
     font-size: 12px;
@@ -3879,9 +3935,9 @@ button {
     }
     .legal-authorities {
         grid-column: 1 / -1;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
+    }
+    .authority-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .legal-shell {
         grid-template-columns: 200px minmax(0, 1fr);
@@ -3926,8 +3982,9 @@ button {
     }
     .legal-authorities {
         grid-column: auto;
-        flex-direction: column;
-        align-items: flex-start;
+    }
+    .authority-links {
+        grid-template-columns: 1fr;
     }
     .legal-infrastructure dl {
         grid-template-columns: 1fr;
@@ -4025,16 +4082,4 @@ button {
         width: 100%;
         text-align: center;
     }
-}
-.legal-authorities .authority-logo {
-    object-fit: contain;
-    flex-shrink: 0;
-}
-.legal-authorities .anpc-logo {
-    width: 66px;
-    height: 36px;
-}
-.legal-authorities .anspdcp-logo {
-    width: 36px;
-    height: 36px;
 }

@@ -44,6 +44,7 @@ import {
     Undo2,
     UserCheck,
     Code2,
+    Globe2,
 } from '@lucide/vue';
 defineProps<{ name: string; size?: number }>();
 const icons: Record<string, typeof LayoutDashboard> = {
@@ -91,6 +92,7 @@ const icons: Record<string, typeof LayoutDashboard> = {
     undo: Undo2,
     usercheck: UserCheck,
     code: Code2,
+    globe: Globe2,
 };
 </script>
 <template>

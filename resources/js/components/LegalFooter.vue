@@ -4,6 +4,36 @@ import { computed } from 'vue';
 import Icon from './UiIcon.vue';
 const props = defineProps<{ compact?: boolean }>();
 const legal = computed(() => usePage().props.legal);
+const authorities = [
+    {
+        href: 'https://anpc.ro',
+        label: 'ANPC · Protecția consumatorilor',
+        title: 'Protecția consumatorilor',
+        description: 'ANPC · Reclamații în România',
+        icon: 'shield',
+    },
+    {
+        href: 'https://reclamatiisal.anpc.ro',
+        label: 'SAL · Soluționarea litigiilor',
+        title: 'Soluționarea litigiilor',
+        description: 'SAL · Soluționare alternativă',
+        icon: 'users',
+    },
+    {
+        href: 'https://consumer-redress.ec.europa.eu/select-language?destination=/node/1',
+        label: 'UE · Drepturile consumatorilor',
+        title: 'Drepturile consumatorilor',
+        description: 'Resurse în Uniunea Europeană',
+        icon: 'globe',
+    },
+    {
+        href: 'https://www.dataprotection.ro',
+        label: 'ANSPDCP · Protecția datelor',
+        title: 'Protecția datelor',
+        description: 'ANSPDCP · Informații și plângeri',
+        icon: 'lock',
+    },
+];
 const links = computed(() =>
     legal.value.links.filter(
         (link) =>
@@ -50,46 +80,47 @@ const links = computed(() =>
             >
         </nav>
         <div v-if="!compact" class="legal-authorities">
-            <a href="https://anpc.ro" target="_blank" rel="noopener noreferrer"
-                ><img
-                    class="authority-logo anpc-logo"
-                    src="/legal/anpc-logo.png"
-                    alt=""
-                    width="66"
-                    height="36"
-                />ANPC · Protecția consumatorilor</a
+            <nav
+                class="authority-links"
+                aria-label="Autorități și resurse pentru reclamații"
             >
+                <a
+                    v-for="authority in authorities"
+                    :key="authority.href"
+                    class="authority-link"
+                    :href="authority.href"
+                    :aria-label="authority.label"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <span class="authority-icon" aria-hidden="true"
+                        ><Icon :name="authority.icon" :size="19"
+                    /></span>
+                    <span class="authority-copy"
+                        ><strong>{{ authority.title }}</strong
+                        ><small>{{ authority.description }}</small></span
+                    >
+                    <span class="authority-external" aria-hidden="true"
+                        ><Icon name="external" :size="14"
+                    /></span>
+                </a>
+            </nav>
             <a
+                v-if="legal.sal_asset"
+                class="authority-sal-link"
                 href="https://reclamatiisal.anpc.ro"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="ANPC — Soluționarea alternativă a litigiilor"
             >
                 <img
-                    v-if="legal.sal_asset"
                     :src="legal.sal_asset"
                     width="250"
                     height="50"
                     alt="ANPC — Soluționarea alternativă a litigiilor"
                 />
-                <span v-else class="sal-text-link"
-                    ><Icon name="users" :size="19" />SAL · Soluționarea
-                    alternativă a litigiilor</span
-                >
             </a>
-            <a
-                href="https://www.dataprotection.ro"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><img
-                    class="authority-logo anspdcp-logo"
-                    src="/legal/anspdcp-logo.png"
-                    alt=""
-                    width="36"
-                    height="36"
-                />ANSPDCP · Protecția datelor</a
-            >
-            <p>Legături către autorități și mecanisme de reclamații.</p>
+            <p>Linkuri către autorități și resurse oficiale.</p>
         </div>
     </footer>
 </template>

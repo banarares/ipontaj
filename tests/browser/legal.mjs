@@ -35,24 +35,85 @@ try {
     );
     for (const name of [
         'ANPC · Protecția consumatorilor',
+        'SAL · Soluționarea litigiilor',
+        'UE · Drepturile consumatorilor',
         'ANSPDCP · Protecția datelor',
     ]) {
-        const logo = page
-            .getByRole('link', { name, exact: true })
-            .locator('img');
-        assert.equal(
-            await logo.evaluate((img) => img.complete && img.naturalWidth > 0),
-            true,
-        );
-        assert.ok((await logo.getAttribute('src')).startsWith('/legal/'));
+        const link = page.getByRole('link', { name, exact: true });
+        assert.equal(await link.getAttribute('target'), '_blank');
+        assert.equal(await link.getAttribute('rel'), 'noopener noreferrer');
+        assert.equal(await link.locator('.authority-icon svg').count(), 1);
     }
+    assert.equal(
+        await page
+            .getByRole('link', {
+                name: 'UE · Drepturile consumatorilor',
+                exact: true,
+            })
+            .getAttribute('href'),
+        'https://consumer-redress.ec.europa.eu/select-language?destination=/node/1',
+    );
+    async function assertAuthorityAlignment() {
+        const boxes = await page
+            .locator('.authority-link')
+            .evaluateAll((links) =>
+                links.map((link) => {
+                    const rect = link.getBoundingClientRect();
+                    const icon = link
+                        .querySelector('.authority-icon')
+                        .getBoundingClientRect();
+                    const text = link
+                        .querySelector('.authority-copy')
+                        .getBoundingClientRect();
+                    return {
+                        left: rect.left,
+                        width: rect.width,
+                        height: rect.height,
+                        iconLeft: icon.left,
+                        iconWidth: icon.width,
+                        iconHeight: icon.height,
+                        textLeft: text.left,
+                    };
+                }),
+            );
+        assert.equal(boxes.length, 4);
+        for (const box of boxes) {
+            for (const key of [
+                'left',
+                'width',
+                'height',
+                'iconLeft',
+                'textLeft',
+            ]) {
+                assert.ok(
+                    Math.abs(box[key] - boxes[0][key]) < 1,
+                    `Footer: ${key} trebuie să fie aliniat.`,
+                );
+            }
+            assert.equal(box.iconWidth, 32);
+            assert.equal(box.iconHeight, 32);
+        }
+        const banner = await sal.boundingBox();
+        assert.equal(banner.width, 250);
+        assert.equal(banner.height, 50);
+        assert.ok(Math.abs(banner.x - boxes[0].left) < 1);
+        assert.ok(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+        );
+    }
+    await assertAuthorityAlignment();
     await page
         .locator('.legal-footer')
         .screenshot({ path: 'docs/screenshots/footer-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
+    await assertAuthorityAlignment();
     await page
         .locator('.legal-footer')
         .screenshot({ path: 'docs/screenshots/footer-mobile.png' });
+    await page.setViewportSize({ width: 320, height: 720 });
+    await assertAuthorityAlignment();
     await page.setViewportSize({ width: 1440, height: 1050 });
     await page
         .getByRole('link', { name: 'Confidențialitate', exact: true })
