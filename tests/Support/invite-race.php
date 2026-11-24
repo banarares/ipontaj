@@ -13,7 +13,12 @@ while (microtime(true) < (float) $argv[3]) {
     usleep(1000);
 }
 try {
-    app(TeamService::class)->invite(Company::findOrFail($argv[1]), ['first_name' => 'Concurent', 'last_name' => 'fictiv', 'email' => $argv[2]]);
+    $company = Company::findOrFail($argv[1]);
+    if (($argv[4] ?? '') === 'managed') {
+        app(TeamService::class)->addManaged($company, ['first_name' => 'Concurent', 'last_name' => 'fictiv', 'joined_on' => '2026-11-01'], (int) $argv[2]);
+    } else {
+        app(TeamService::class)->invite($company, ['first_name' => 'Concurent', 'last_name' => 'fictiv', 'email' => $argv[2]]);
+    }
     echo 'accepted';
 } catch (ValidationException) {
     echo 'limited';

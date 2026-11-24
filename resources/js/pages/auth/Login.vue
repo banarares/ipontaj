@@ -1,8 +1,25 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import AuthShell from '@/components/AuthShell.vue';
+import TurnstileWidget from '@/components/TurnstileWidget.vue';
 defineProps<{ status?: string; canResetPassword?: boolean }>();
-const form = useForm({ email: '', password: '', remember: true });
+const page = usePage();
+const challenge = ref<InstanceType<typeof TurnstileWidget> | null>(null);
+const form = useForm({
+    email: '',
+    password: '',
+    remember: true,
+    turnstile_token: '',
+});
+function submit() {
+    form.post('/login', {
+        onFinish: () => {
+            form.reset('password');
+            challenge.value?.reset();
+        },
+    });
+}
 </script>
 <template>
     <Head title="Intră în cont" /><AuthShell
@@ -10,11 +27,7 @@ const form = useForm({ email: '', password: '', remember: true });
         <h1 style="margin-top: 12px">Intră în contul tău</h1>
         <p>Echipa ta e la un pas distanță.</p>
         <p v-if="status" class="info-note">{{ status }}</p>
-        <form
-            @submit.prevent="
-                form.post('/login', { onFinish: () => form.reset('password') })
-            "
-        >
+        <form @submit.prevent="submit">
             <label
                 >Adresa de email<input
                     v-model="form.email"
@@ -47,7 +60,22 @@ const form = useForm({ email: '', password: '', remember: true });
                     >Ai uitat parola?</Link
                 >
             </div>
-            <button class="button primary full" :disabled="form.processing">
+            <TurnstileWidget
+                @update:model-value="
+                    (value) => value && form.clearErrors('turnstile_token')
+                "
+                ref="challenge"
+                v-model="form.turnstile_token"
+                action="login"
+                :error="form.errors.turnstile_token"
+            />
+            <button
+                class="button primary full"
+                :disabled="
+                    form.processing ||
+                    (page.props.turnstile.enabled && !form.turnstile_token)
+                "
+            >
                 {{ form.processing ? 'Se autentifică…' : 'Intră în cont' }}
             </button>
         </form>

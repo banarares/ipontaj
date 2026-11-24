@@ -48,7 +48,7 @@ class WorkspaceController extends Controller
         $date ??= $month === substr($today, 0, 7) ? $today : $month.'-01';
         $billingTestMode = config('ipontaj.billing_enabled') && str_starts_with((string) config('cashier.secret'), 'sk_test_');
         $summary = $owner ? $this->attendance->summary($company, $month) : null;
-        $members = $owner ? $company->memberships()->with('user')->get() : collect([$member->load('user')]);
+        $members = $owner ? $company->memberships()->with('user')->orderBy('id')->get() : collect([$member->load('user')]);
         $entries = $company->entries()->with('intervals')->whereDate('date', '>=', $month.'-01')->whereDate('date', '<=', Carbon::parse($month.'-01')->endOfMonth()->toDateString())->when(! $owner, fn ($q) => $q->where('membership_id', $member->id))->get();
 
         return Inertia::render('Workspace', [
@@ -105,7 +105,7 @@ class WorkspaceController extends Controller
     public function saveDay(Request $request): RedirectResponse
     {
         $self = $this->context->membership($request);
-        $data = $request->validate(['membership_id' => 'required|integer', 'date' => 'required|date_format:Y-m-d', 'absence' => ['nullable', Rule::in(array_keys(AttendanceService::ABSENCES))], 'intervals' => 'nullable|array|max:20', 'intervals.*.kind' => 'required|in:work,break', 'intervals.*.start_at' => 'required|string|max:35', 'intervals.*.end_at' => 'required|string|max:35', 'reason' => 'nullable|string|max:1000', 'note' => 'nullable|string|max:1000']);
+        $data = $request->validate(['membership_id' => 'required|integer', 'date' => 'required|date_format:Y-m-d', 'extend_period' => 'sometimes|boolean', 'absence' => ['nullable', Rule::in(array_keys(AttendanceService::ABSENCES))], 'intervals' => 'nullable|array|max:20', 'intervals.*.kind' => 'required|in:work,break', 'intervals.*.start_at' => 'required|string|max:35', 'intervals.*.end_at' => 'required|string|max:35', 'reason' => 'nullable|string|max:1000', 'note' => 'nullable|string|max:1000']);
         $member = $self->company->memberships()->whereKey($data['membership_id'])->firstOrFail();
         abort_unless($self->role === 'owner' || $member->id === $self->id, 403);
         $this->attendance->save($member, $data, $request->user()->id, $self->role === 'owner');

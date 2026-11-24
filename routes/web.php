@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CompanyLookupController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DataController;
 use App\Http\Controllers\DemoController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LegalRequestController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\AuditEvent;
@@ -19,6 +21,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+Route::get('/robots.txt', [SeoController::class, 'robots']);
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap']);
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,60,contact')->name('contact.store');
 foreach (array_keys(app(LegalDocuments::class)->index()) as $slug) {
     Route::get('/'.$slug, [LegalController::class, 'show'])->defaults('slug', $slug)->name('legal.'.$slug);
 }
@@ -65,6 +70,7 @@ Route::middleware(['auth', 'throttle:120,1,workspace'])->group(function () {
     Route::post('/company/settings', [WorkspaceController::class, 'settings']);
     Route::post('/schedules', [WorkspaceController::class, 'schedule']);
     Route::patch('/members/{member}', [WorkspaceController::class, 'member']);
+    Route::post('/members', [InvitationController::class, 'managed'])->middleware('throttle:10,1,managed-members');
     Route::post('/preferences', [WorkspaceController::class, 'preferences']);
     Route::post('/invitations', [InvitationController::class, 'store'])->middleware('throttle:10,1,invitations');
     Route::delete('/invitations/{invitation}', [InvitationController::class, 'revoke']);

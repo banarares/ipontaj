@@ -54,7 +54,7 @@ class ExcelService
                 }
                 $intervals = $e->intervals->isEmpty() ? [null] : $e->intervals;
                 foreach ($intervals as $interval) {
-                    $values = [$company->name, $row['membership']->user->last_name, $row['membership']->user->first_name, $day['date'], $interval ? ($interval->kind === 'break' ? 'Pauză' : 'Lucru') : (AttendanceService::ABSENCES[$e->absence] ?? ''), $interval?->start_at->setTimezone($company->timezone)->format('d.m.Y H:i P') ?? '', $interval?->end_at->setTimezone($company->timezone)->format('d.m.Y H:i P') ?? '', $e->minutes, $e->confirmed_at?->toIso8601String() ?? 'Neconfirmat', $e->approved_at?->toIso8601String() ?? 'Neaprobat', $e->note ?? ''];
+                    $values = [$company->name, $row['membership']->user->last_name, $row['membership']->user->first_name, $day['date'], $interval ? ($interval->kind === 'break' ? 'Pauză' : 'Lucru') : (AttendanceService::ABSENCES[$e->absence] ?? ''), $interval?->start_at->setTimezone($company->timezone)->format('d.m.Y H:i P') ?? '', $interval?->end_at->setTimezone($company->timezone)->format('d.m.Y H:i P') ?? '', $e->minutes, $e->confirmed_at?->toIso8601String() ?? ($row['membership']->managed ? 'Fără cont — pontaj de responsabil' : 'Neconfirmat'), $e->approved_at?->toIso8601String() ?? 'Neaprobat', $e->note ?? ''];
                     foreach ($values as $c => $value) {
                         $detail->setCellValueExplicit([$c + 1, $r], (string) $value, DataType::TYPE_STRING);
                     }

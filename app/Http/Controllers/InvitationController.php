@@ -16,6 +16,20 @@ use Inertia\Response;
 
 class InvitationController extends Controller
 {
+    public function managed(Request $request, CompanyContext $context, TeamService $service): RedirectResponse
+    {
+        $company = $context->owner($request);
+        abort_if($company->is_demo, 403, 'Adăugarea colegilor este disponibilă după crearea unui cont.');
+        $data = $request->validate([
+            'first_name' => 'required|string|max:100', 'last_name' => 'required|string|max:100',
+            'responsibility_confirmed' => 'accepted',
+            'joined_on' => ['required', 'date_format:Y-m-d', 'after_or_equal:1900-01-01', 'before_or_equal:'.now($company->timezone)->toDateString()],
+        ]);
+        $service->addManaged($company, $data, $request->user()->id);
+
+        return back()->with('success', 'Colegul a fost adăugat fără cont. Îi poți înregistra orele din Pontaj lunar.');
+    }
+
     public function store(Request $request, CompanyContext $context, TeamService $service): RedirectResponse
     {
         $company = $context->owner($request);

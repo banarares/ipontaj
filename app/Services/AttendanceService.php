@@ -55,7 +55,7 @@ class AttendanceService
         AuditEvent::create(['company_id' => $company->id, 'user_id' => $actor, 'action' => $action, 'before' => $before, 'after' => $after, 'reason' => $reason]);
     }
 
-    /** @param array{date:string,absence?:string|null,intervals?:list<array{kind:string,start_at:string,end_at:string}>,reason?:string|null,note?:string|null} $data */
+    /** @param array{date:string,extend_period?:bool,absence?:string|null,intervals?:list<array{kind:string,start_at:string,end_at:string}>,reason?:string|null,note?:string|null} $data */
     public function save(Membership $member, array $data, int $actor, bool $owner): TimeEntry
     {
         return DB::transaction(function () use ($member, $data, $actor, $owner) {
@@ -65,12 +65,34 @@ class AttendanceService
             $month = substr($date, 0, 7);
             abort_if(MonthClosure::where('company_id', $company->id)->where('month', $month)->whereNotNull('approved_at')->exists(), 423, 'Luna este aprobată. Proprietarul trebuie să o redeschidă.');
             abort_unless(($member->active || $owner) && $member->tracked, 403);
-            if ($date > now($company->timezone)->toDateString() || ! $member->activeOn($date)) {
-                $this->fail('date', 'Alege o zi din perioada activă, până astăzi.');
+            if ($date > now($company->timezone)->toDateString()) {
+                $this->fail('date', 'Nu poți înregistra o zi viitoare.');
+            }
+            if (! $member->activeOn($date)) {
+                if (! $owner || $date >= $member->joined_on->toDateString()) {
+                    $this->fail('date', 'Ziua este în afara perioadelor de activitate. Nu poți ponta într-o pauză de inactivitate.');
+                }
+                if (empty($data['extend_period'])) {
+                    $this->fail('extend_period', 'Confirmă data de început a pontajului pentru a salva această zi.');
+                }
+                if (trim($data['reason'] ?? '') === '') {
+                    $this->fail('reason', 'Explică de ce pontajul începe mai devreme.');
+                }
+                $previousStart = $member->joined_on->toDateString();
+                abort_if(MonthClosure::where('company_id', $company->id)->whereBetween('month', [$month, substr($previousStart, 0, 7)])->whereNotNull('approved_at')->exists(), 423, 'Redeschide lunile aprobate înainte de a corecta începutul pontajului.');
+                $firstPeriod = $member->periods()->orderBy('start_on')->orderBy('id')->lockForUpdate()->first();
+                if (! $firstPeriod || $date >= substr($firstPeriod->start_on, 0, 10)) {
+                    $this->fail('date', 'Perioada de activitate trebuie verificată de proprietar.');
+                }
+                $firstPeriod->update(['start_on' => $date]);
+                $member->update(['joined_on' => $date]);
+                $member->unsetRelation('periods');
+                $this->audit($company, $actor, 'Început pontaj corectat', ['membership_id' => $member->id, 'joined_on' => $previousStart], ['membership_id' => $member->id, 'joined_on' => $date], $data['reason']);
             }
             $existing = $member->entries()->whereDate('date', $date)->first();
-            $correction = $owner && ($member->user_id !== $actor || $existing);
-            if ($correction && empty($data['reason'])) {
+            $managed = $owner && $member->user_id === null;
+            $correction = $owner && (($member->user_id !== $actor && ! $managed) || $existing);
+            if ($correction && trim($data['reason'] ?? '') === '') {
                 $this->fail('reason', 'Scrie motivul corecturii.');
             }
             $before = $existing?->load('intervals')->toArray();
@@ -140,11 +162,11 @@ class AttendanceService
             }
             $self = $member->user_id === $actor;
             $entry = $existing ?? new TimeEntry(['membership_id' => $member->id, 'date' => $date]);
-            $entry->fill(['company_id' => $company->id, 'absence' => $data['absence'] ?? null, 'minutes' => $minutes, 'note' => $data['note'] ?? null, 'confirmed_at' => $self ? now() : null, 'confirmed_by' => $self ? $actor : null, 'approved_at' => null, 'approved_by' => null]);
+            $entry->fill(['company_id' => $company->id, 'absence' => $data['absence'] ?? null, 'minutes' => $minutes, 'note' => $data['note'] ?? null, 'confirmed_at' => $self ? now() : null, 'confirmed_by' => $self ? $actor : null, 'approved_at' => $managed ? now() : null, 'approved_by' => $managed ? $actor : null]);
             $entry->save();
             $entry->intervals()->delete();
             $entry->intervals()->createMany($rows);
-            $this->audit($company, $actor, $correction ? 'Corectură pontaj' : 'Zi înregistrată', $before, $entry->load('intervals')->toArray(), $data['reason'] ?? null);
+            $this->audit($company, $actor, $correction ? 'Corectură pontaj' : ($managed ? 'Pontaj înregistrat de responsabil' : 'Zi înregistrată'), $before, $entry->load('intervals')->toArray(), $data['reason'] ?? null);
 
             return $entry;
         }, 3);
@@ -157,7 +179,7 @@ class AttendanceService
         $last = $start->endOfMonth();
         $today = now($company->timezone)->startOfDay();
         $company->loadMissing('schedules');
-        $members = $company->memberships()->with(['user', 'periods'])->where('tracked', true)->whereDate('joined_on', '<=', $last)->where(fn ($q) => $q->whereNull('left_on')->orWhereDate('left_on', '>=', $start))->get();
+        $members = $company->memberships()->with(['user', 'periods'])->where('tracked', true)->whereDate('joined_on', '<=', $last)->where(fn ($q) => $q->whereNull('left_on')->orWhereDate('left_on', '>=', $start))->orderBy('id')->get();
         $entries = $company->entries()->with('intervals')->whereDate('date', '>=', $start->toDateString())->whereDate('date', '<=', $last->toDateString())->get();
         $rows = [];
         $issues = [];

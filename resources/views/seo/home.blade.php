@@ -1,0 +1,7 @@
+<div class="public-page">
+ <header class="public-nav"><a href="/">iPontaj</a><nav><a href="/contact">Contact</a> · <a href="/login">Intră în cont</a> · <a href="/register">Începe gratuit</a></nav></header>
+ <main>
+  <section class="public-hero"><div><span class="hero-label">Făcut pentru echipe mici. Și zile mai simple.</span><h1>Pontajul la zi.<br><em>O grijă în minus.</em></h1><p>Confirmi ziua în câteva secunde. La final de lună ai pontajul pregătit pentru contabil.</p><div class="hero-actions"><a href="/register" class="button primary">Creează cont gratuit</a><a href="/contact" class="button secondary">Contactează-ne</a></div></div></section>
+  <section class="public-section"><h2>Pontaj simplu pentru echipa ta</h2><p>Înregistrează orele lucrate, pauzele și absențele. Verifică luna și descarcă pontajul Excel pentru contabil. Fiecare coleg își confirmă orele, iar proprietarul verifică înregistrările.</p><h2>Planuri pentru echipe mici</h2><p>Gratuit: 0 lei pe lună, până la 5 persoane active. Echipă: 49 lei pe lună, preț final, până la 15 persoane active. Planul Gratuit nu necesită card. Disponibilitatea abonamentului Echipă este afișată în cont.</p><p>Operator: {{ config('legal.operator.name') }} · CIF {{ config('legal.operator.cif') }}. Operator neînregistrat în scopuri de TVA.</p><p><a href="/contact">Contact și reclamații</a> · <a href="/termeni-si-conditii">Termeni și condiții</a> · <a href="/confidentialitate">Confidențialitate</a> · <a href="/cookies">Cookie-uri</a> · <a href="/licenta">Licență și cod sursă</a></p></section>
+ </main>
+</div>

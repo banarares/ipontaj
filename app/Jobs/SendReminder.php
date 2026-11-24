@@ -24,7 +24,7 @@ class SendReminder implements ShouldQueue
         DB::transaction(function () use ($attendance) {
             $company = Company::find($this->companyId);
             $member = Membership::with('user')->where('company_id', $this->companyId)->find($this->memberId);
-            if (! $company || ! $member || $company->is_demo || ! $company->reminders || ! $member->active || ! $member->reminders) {
+            if (! $company || ! $member || ! $member->user_id || $company->is_demo || ! $company->reminders || ! $member->active || ! $member->reminders) {
                 return;
             }
             $key = ($this->digest ? 'digest' : 'day').":{$company->id}:{$member->id}:{$this->date}";

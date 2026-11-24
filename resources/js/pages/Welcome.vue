@@ -7,6 +7,21 @@ import LegalFooter from '@/components/LegalFooter.vue';
 const loading = ref(false);
 function demo() {
     loading.value = true;
+    if (document.querySelector('script[data-optional-analytics]')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/demo';
+        const token = document.createElement('input');
+        token.type = 'hidden';
+        token.name = '_token';
+        token.value =
+            document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                ?.content || '';
+        form.appendChild(token);
+        document.body.appendChild(form);
+        form.submit();
+        return;
+    }
     router.post(
         '/demo',
         {},

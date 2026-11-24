@@ -72,6 +72,10 @@ Pentru SQLite local, oprește scrierile sau folosește mecanismul de backup SQLi
 
 ## Export și retenție
 
+Colegii fără email sunt adăugați numai de proprietar, după confirmarea responsabilității și alegerea primei zile de pontaj. Nu primesc cont, parole sau mementouri. Numele/prenumele și dovada asumării se păstrează în apartenență; proprietarul înregistrează și aprobă orele, cu audit și motiv obligatoriu la corectarea lor. Profilurile inactive eliberează locul, iar reactivarea verifică din nou limita. Conversia ulterioară a unui profil fără cont într-un cont cu email nu este automatizată.
+
+Prima zi poate fi corectată spre trecut de proprietar chiar din editorul zilnic, cu confirmare și motiv. Se extinde numai primul interval de activitate; pauzele ulterioare rămân protejate. Dacă schimbarea ar afecta luni deja aprobate, acestea trebuie redeschise. Nu modifica direct `joined_on` sau intervalele în baza de date pentru a ocoli auditul.
+
 Proprietarul poate descărca Excelul lunar și, din Setări, exportul JSON al firmei: firmă, membri, programe, intervale, închideri și audit. Parolele și identificatorii Stripe nu sunt incluși în exportul de firmă. Accesul este verificat pe server.
 
 Demo-ul se șterge după 24 de ore prin scheduler. Datele reale și auditul nu sunt șterse automat în această versiune. Operatorul stabilește și documentează perioadele de păstrare a pontajului, auditului, logurilor, invitațiilor expirate, joburilor și backupurilor, împreună cu persoanele responsabile. Nu se presupune o durată legală universală.

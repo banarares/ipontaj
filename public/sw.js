@@ -1,9 +1,11 @@
-const CACHE = 'ipontaj-public-v1';
+const CACHE = 'ipontaj-public-v2';
 const PUBLIC = [
     '/offline.html',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/favicon.svg',
+    '/favicon.ico',
+    '/apple-touch-icon.png',
 ];
 self.addEventListener('install', (event) => {
     event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PUBLIC)));

@@ -124,3 +124,7 @@ Versiunea activă a documentelor este `2026-11-24.2`. Formulările temporare de 
 Documentele `2026-11-24.1` sunt păstrate nemodificate; dovezile semnate/descărcabile conțin în continuare textul și hashul acceptat atunci. O nouă acceptare folosește versiunea curentă, fără rescrierea dovezilor vechi. Pagina Licență indică repositoryul GitHub al proiectului și păstrează arhiva sursei versiunii instalate. Publicarea repositoryului este o acțiune separată a proprietarului.
 
 Pentru operare rămân necesare confirmarea contractuală a locației și retenției pentru pachetul efectiv, acordurile furnizorilor, planul de retenție aplicat și evaluarea obligațiilor de accesibilitate din Legea nr. 232/2022. Aceste aspecte nu sunt declarate finalizate prin schimbarea textelor.
+
+## Cloudflare și formularele publice
+
+Versiunea activă este `2026-11-24.3`. Include contactul salvat criptat și informarea despre serviciile Cloudflare configurabile, proxy, Turnstile și analiza publică opțională. Verifică acordul aplicabil contului și transferurile înainte de activarea serviciilor; nu este presupusă o localizare exclusiv în SEE. Bannerul separă măsurile necesare de analiza opțională, iar refuzul nu împiedică autentificarea. Ghidul de configurare este [CLOUDFLARE_SEO.md](CLOUDFLARE_SEO.md). Versiunile anterioare nu au fost rescrise.

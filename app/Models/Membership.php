@@ -11,7 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property int $company_id
- * @property int $user_id
+ * @property int|null $user_id
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property bool $managed
  * @property string $role
  * @property bool $active
  * @property bool $tracked
@@ -25,6 +28,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Membership extends Model
 {
+    protected $appends = ['managed'];
+
+    public function getManagedAttribute(): bool
+    {
+        return $this->user_id === null;
+    }
+
     public function activeOn(string $date): bool
     {
         if ($date < $this->joined_on->toDateString() || ($this->left_on && $date > $this->left_on->toDateString())) {
@@ -65,7 +75,7 @@ class Membership extends Model
     /** @return array<string,string> */
     protected function casts(): array
     {
-        return ['active' => 'boolean', 'tracked' => 'boolean', 'reminders' => 'boolean', 'joined_on' => 'date', 'left_on' => 'date'];
+        return ['active' => 'boolean', 'tracked' => 'boolean', 'reminders' => 'boolean', 'joined_on' => 'date', 'left_on' => 'date', 'managed_confirmed_at' => 'datetime'];
     }
 
     /** @return BelongsTo<Company, $this> */
@@ -77,7 +87,13 @@ class Membership extends Model
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        // A display profile only: no users row, login credentials or fake email.
+        return $this->belongsTo(User::class)->withDefault(fn (User $user, Membership $member) => $user->forceFill([
+            'first_name' => $member->first_name,
+            'last_name' => $member->last_name,
+            'name' => trim($member->first_name.' '.$member->last_name),
+            'email' => null,
+        ]));
     }
 
     /** @return HasMany<TimeEntry, $this> */
