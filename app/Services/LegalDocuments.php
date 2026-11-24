@@ -39,7 +39,7 @@ class LegalDocuments
     /** @return array<string,mixed> */
     public function facts(): array
     {
-        return ['operator' => config('legal.operator'), 'hosting' => config('legal.hosting'), 'retention' => config('legal.retention'), 'monthly_price_ron' => 49, 'consumers_allowed' => true];
+        return ['operator' => config('legal.operator'), 'hosting' => config('legal.hosting'), 'retention' => config('legal.retention'), 'monthly_price_ron' => 49, 'consumers_allowed' => true, 'security_services' => ['cloudflare_proxy' => (bool) config('cloudflare.enabled'), 'turnstile' => (bool) config('cloudflare.turnstile.enabled')], 'optional_analytics' => filled(config('cloudflare.analytics_token'))];
     }
 
     /** @param list<string> $slugs

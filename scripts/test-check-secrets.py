@@ -64,6 +64,15 @@ class ReleaseSecretChecks(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(result['findings'][0]['rule'], 'nonempty-example-secret')
 
+    def test_turnstile_secret_key_is_checked_without_exposing_its_value(self):
+        credential = 'synthetic-turnstile-' + 'server-value-' + 'x' * 12
+        (self.root / 'private.env').write_text('TURNSTILE_SECRET_KEY=' + credential)
+        self.stage('config/example.php', credential.encode())
+        code, result, output = self.scan('--staged', '--known-secrets-from', str(self.root / 'private.env'))
+        self.assertEqual(code, 1)
+        self.assertEqual(result['findings'][0]['rule'], 'configured-secret')
+        self.assertNotIn(credential, output)
+
 
 if __name__ == '__main__':
     unittest.main()

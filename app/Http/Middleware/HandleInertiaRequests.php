@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Services\LegalDocuments;
+use App\Services\SeoMetadata;
+use App\Services\Turnstile;
 use App\Support\PasswordPolicy;
 use Closure;
 use Illuminate\Http\Request;
@@ -55,9 +57,12 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'head' => fn () => app(SeoMetadata::class)->head($request),
+            'turnstile' => fn () => app(Turnstile::class)->publicConfig(),
+            'cookieSettings' => fn () => ['version' => config('legal.version').':'.(config('cloudflare.analytics_token') ? 'analytics' : 'necessary'), 'analyticsToken' => config('cloudflare.analytics_token'), 'analyticsAllowed' => ! $request->user() && $request->routeIs('home', 'legal.contact')],
             'passwordPolicy' => PasswordPolicy::frontend(),
             'legal' => fn () => app(LegalDocuments::class)->publicData(),
-            'flash' => ['success' => fn () => $request->session()->get('success'), 'invitation_url' => fn () => $request->session()->get('invitation_url'), 'legal_request' => fn () => $request->session()->get('legal_request')],
+            'flash' => ['success' => fn () => $request->session()->get('success'), 'invitation_url' => fn () => $request->session()->get('invitation_url'), 'legal_request' => fn () => $request->session()->get('legal_request'), 'contact_reference' => fn () => $request->session()->get('contact_reference')],
             'auth' => [
                 'user' => $request->user(),
             ],

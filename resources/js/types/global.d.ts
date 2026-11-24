@@ -22,6 +22,12 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             legal: LegalData;
+            turnstile: { enabled: boolean; siteKey: string | null };
+            cookieSettings: {
+                version: string;
+                analyticsToken: string | null;
+                analyticsAllowed: boolean;
+            };
             [key: string]: unknown;
         };
     }

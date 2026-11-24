@@ -13,7 +13,7 @@ Artisan::command('pontaj:remind', function (AttendanceService $attendance) {
     Company::where('is_demo', false)->where('reminders', true)->chunkById(100, function ($companies) use ($attendance) {
         foreach ($companies as $company) {
             $now = now($company->timezone);
-            foreach ($company->memberships()->where('active', true)->where('reminders', true)->get() as $member) {
+            foreach ($company->memberships()->whereNotNull('user_id')->where('active', true)->where('reminders', true)->get() as $member) {
                 // Include yesterday to handle overnight shifts.
                 foreach ([$now->toDateString(), $now->subDay()->toDateString()] as $date) {
                     $schedule = $attendance->schedule($member, $date);

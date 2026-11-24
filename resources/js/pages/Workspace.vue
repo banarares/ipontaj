@@ -184,6 +184,12 @@ const todayEntry = computed(() =>
             e.date.slice(0, 10) === props.selectedDate,
     ),
 );
+const canCorrectStart = computed(
+    () =>
+        owner.value &&
+        props.selectedDate < props.membership.joined_on.slice(0, 10) &&
+        props.selectedDate <= props.today,
+);
 const ownEntries = computed(() =>
     props.entries
         .filter((e) => e.membership_id === props.membership.id)
@@ -194,6 +200,9 @@ const invite = useForm({
     last_name: '',
     email: '',
     send_email: false,
+    without_email: false,
+    responsibility_confirmed: false,
+    joined_on: props.today,
 });
 const settings = useForm({
     name: props.company.name,
@@ -308,7 +317,7 @@ function reopenMonth() {
     });
 }
 function sendInvite() {
-    invite.post('/invitations', {
+    invite.post(invite.without_email ? '/members' : '/invitations', {
         preserveScroll: true,
         onSuccess: () => {
             invite.reset();
@@ -1041,7 +1050,11 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                                 type="date"
                                 :value="selectedDate"
                                 :max="today"
-                                :min="membership.joined_on.slice(0, 10)"
+                                :min="
+                                    owner
+                                        ? undefined
+                                        : membership.joined_on.slice(0, 10)
+                                "
                                 aria-label="Alege ziua"
                                 @change="
                                     router.get('/today', {
@@ -1146,12 +1159,14 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                             </div>
                             <div
                                 v-if="
-                                    selectedDateActive && !closure?.approved_at
+                                    (selectedDateActive || canCorrectStart) &&
+                                    !closure?.approved_at &&
+                                    selectedDate <= today
                                 "
                                 class="daily-actions"
                             >
                                 <button
-                                    v-if="!todayEntry"
+                                    v-if="!todayEntry && selectedDateActive"
                                     class="button primary"
                                     :disabled="confirming || !online"
                                     @click="quickConfirm"
@@ -1590,7 +1605,9 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                                                         m.user.name
                                                     }}</strong
                                                     ><span>{{
-                                                        m.user.email
+                                                        m.managed
+                                                            ? 'Fără cont · pontaj de responsabil'
+                                                            : m.user.email
                                                     }}</span>
                                                 </div>
                                             </div>
@@ -1816,7 +1833,9 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                             </table>
                         </div>
                     </section>
-                    <Link href="/today" class="button primary fit"
+                    <Link
+                        href="/today"
+                        class="button primary fit history-day-link"
                         ><Icon name="clock" :size="17" />Mergi la ziua mea</Link
                     >
                 </template>
@@ -2316,9 +2335,19 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                     <div class="modal-heading">
                         <div>
                             <span class="eyebrow">MAI BINE ÎMPREUNĂ</span>
-                            <h2 id="invite-title">Invită un coleg</h2>
+                            <h2 id="invite-title">
+                                {{
+                                    invite.without_email
+                                        ? 'Adaugă un coleg fără email'
+                                        : 'Invită un coleg'
+                                }}
+                            </h2>
                             <p>
-                                Un link personal. Câteva secunde până în echipă.
+                                {{
+                                    invite.without_email
+                                        ? 'Tu îi completezi pontajul. Nu are nevoie de cont.'
+                                        : 'Un link personal. Câteva secunde până în echipă.'
+                                }}
                             </p>
                         </div>
                         <button
@@ -2364,25 +2393,68 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                                 ></label
                             >
                         </div>
-                        <label
-                            >Adresa de email<input
-                                v-model="invite.email"
-                                type="email"
-                                required
-                                placeholder="maria@exemplu.ro"
-                            /><span class="form-error">{{
-                                invite.errors.email
-                            }}</span></label
-                        ><label class="checkbox-label"
+                        <label class="checkbox-label"
                             ><input
-                                v-model="invite.send_email"
+                                v-model="invite.without_email"
                                 type="checkbox"
-                            />Trimite invitația și prin email</label
+                                @change="invite.clearErrors()"
+                            />Colegul nu are adresă de email</label
                         >
-                        <p class="hint">
-                            Linkul expiră în 7 zile și rezervă un loc în plan.
-                            Regenerarea dezactivează linkul anterior.
-                        </p></template
+                        <template v-if="!invite.without_email"
+                            ><label
+                                >Adresa de email<input
+                                    v-model="invite.email"
+                                    type="email"
+                                    required
+                                    placeholder="maria@exemplu.ro"
+                                /><span class="form-error">{{
+                                    invite.errors.email
+                                }}</span></label
+                            ><label class="checkbox-label"
+                                ><input
+                                    v-model="invite.send_email"
+                                    type="checkbox"
+                                />Trimite invitația și prin email</label
+                            >
+                            <p class="hint">
+                                Linkul expiră în 7 zile și rezervă un loc în
+                                plan. Regenerarea dezactivează linkul anterior.
+                            </p></template
+                        >
+                        <template v-else>
+                            <label
+                                >Pontaj începând cu<input
+                                    v-model="invite.joined_on"
+                                    type="date"
+                                    required
+                                    :max="today"
+                                    min="1900-01-01"
+                                /><span class="form-error">{{
+                                    invite.errors.joined_on
+                                }}</span></label
+                            >
+                            <label class="checkbox-label managed-responsibility"
+                                ><input
+                                    v-model="invite.responsibility_confirmed"
+                                    type="checkbox"
+                                    required
+                                />Confirm că acest coleg nu are email și îmi
+                                asum înregistrarea corectă a orelor și
+                                absențelor sale.</label
+                            >
+                            <span
+                                v-if="invite.errors.responsibility_confirmed"
+                                class="form-error"
+                                >{{
+                                    invite.errors.responsibility_confirmed
+                                }}</span
+                            >
+                            <p class="hint">
+                                Colegul ocupă un loc în plan. Nu îi creăm cont
+                                și nu trimitem invitații. Îi înregistrezi orele
+                                din Pontaj lunar.
+                            </p>
+                        </template></template
                     >
                     <div class="modal-footer">
                         <button
@@ -2406,7 +2478,9 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                             <Icon name="plus" :size="17" />{{
                                 invite.processing
                                     ? 'Se pregătește…'
-                                    : 'Creează invitația'
+                                    : invite.without_email
+                                      ? 'Adaugă colegul'
+                                      : 'Creează invitația'
                             }}
                         </button>
                     </div>

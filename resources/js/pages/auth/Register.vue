@@ -2,6 +2,10 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AuthShell from '@/components/AuthShell.vue';
 import NewPasswordField from '@/components/NewPasswordField.vue';
+import TurnstileWidget from '@/components/TurnstileWidget.vue';
+import { ref } from 'vue';
+const page = usePage();
+const challenge = ref<InstanceType<typeof TurnstileWidget> | null>(null);
 const form = useForm({
     first_name: '',
     last_name: '',
@@ -10,6 +14,7 @@ const form = useForm({
     password_confirmation: '',
     terms_accepted: false,
     legal_version: usePage().props.legal.version,
+    turnstile_token: '',
 });
 </script>
 <template>
@@ -22,6 +27,7 @@ const form = useForm({
                 form.post('/register', {
                     onSuccess: () =>
                         form.reset('password', 'password_confirmation'),
+                    onFinish: () => challenge?.reset(),
                 })
             "
         >
@@ -128,7 +134,22 @@ const form = useForm({
                 Documentele s-au actualizat. Reîncarcă pagina pentru a consulta
                 versiunea curentă.
             </p>
-            <button class="button primary full" :disabled="form.processing">
+            <TurnstileWidget
+                @update:model-value="
+                    (value) => value && form.clearErrors('turnstile_token')
+                "
+                ref="challenge"
+                v-model="form.turnstile_token"
+                action="register"
+                :error="form.errors.turnstile_token"
+            />
+            <button
+                class="button primary full"
+                :disabled="
+                    form.processing ||
+                    (page.props.turnstile.enabled && !form.turnstile_token)
+                "
+            >
                 {{
                     form.processing
                         ? 'Se creează contul…'

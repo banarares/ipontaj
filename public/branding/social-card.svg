@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+ <rect width="1200" height="630" fill="#f3f7ed"/>
+ <circle cx="1140" cy="90" r="260" fill="#e4eddb"/>
+ <!-- brand-icon:start -->
+ <svg x="72" y="64" width="56" height="56" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#19765b"/><g fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="19" width="30" height="34" rx="5"/><path d="M25 13v13m14-13v13M25 37l5 5 10-11"/></g></svg>
+ <!-- brand-icon:end -->
+ <g font-family="Arial, sans-serif" fill="#233b30"><text x="143" y="106" font-size="42" font-weight="700">iPontaj<tspan fill="#176f56">.</tspan></text>
+ <text x="72" y="250" font-size="70" font-weight="700" letter-spacing="-2">Pontajul la zi.</text><text x="72" y="335" font-size="70" font-weight="700" letter-spacing="-2" fill="#176f56">O grijă în minus.</text>
+ <text x="76" y="405" font-size="25" fill="#526459">Confirmi ziua. Verifici luna. Exporți pentru contabil.</text><text x="76" y="542" font-size="22" fill="#526459">Făcut pentru echipe mici.</text><text x="1125" y="542" text-anchor="end" font-size="24" font-weight="700" fill="#176f56">ipontaj.ro</text></g>
+</svg>

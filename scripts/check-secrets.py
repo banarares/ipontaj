@@ -16,7 +16,7 @@ PATTERNS = {
     'slack-token': re.compile(rb'xox[baprs]-[A-Za-z0-9-]{20,}'),
     'npm-token': re.compile(rb'npm_[A-Za-z0-9]{30,}'),
 }
-SECRET_ENV = re.compile(r'(?:PASSWORD|SECRET|TOKEN|ACCESS_KEY|API_KEY|APP_KEY|STRIPE_KEY)$')
+SECRET_ENV = re.compile(r'(?:PASSWORD|SECRET|SECRET_KEY|TOKEN|ACCESS_KEY|API_KEY|APP_KEY|STRIPE_KEY)$')
 
 
 def git(root, *args):
@@ -50,7 +50,9 @@ def known_secrets(path):
             continue
         name, value = line.split('=', 1)
         value = value.strip().strip('\"\'')
-        if SECRET_ENV.search(name.strip()) and len(value) >= 12 and '${' not in value:
+        # Documented public Cloudflare dummy keys are test fixtures, not credentials.
+        public_turnstile_test_key = value in [prefix + 'x' + '0' * 31 + 'AA' for prefix in ['1', '2', '3']]
+        if SECRET_ENV.search(name.strip()) and len(value) >= 12 and '${' not in value and not public_turnstile_test_key:
             values.append(value.encode())
     return values
 

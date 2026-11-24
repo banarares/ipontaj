@@ -13,3 +13,5 @@
 - [Raport de verificare și limite](VERIFICATION.md)
 
 Documentele operaționale nu înseamnă că infrastructura sau contractele au fost verificate în producție. Pentru instalarea propriei instanțe, revizuiește identitatea operatorului, furnizorii și condițiile aplicabile.
+
+- [Cloudflare, contact, cookie-uri și Google](CLOUDFLARE_SEO.md) — configurare, limite și verificări locale.

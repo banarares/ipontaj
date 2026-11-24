@@ -5,6 +5,7 @@ import Brand from '@/components/Brand.vue';
 import Icon from '@/components/UiIcon.vue';
 import LegalFooter from '@/components/LegalFooter.vue';
 import LegalRequestForm from '@/components/LegalRequestForm.vue';
+import ContactForm from '@/components/ContactForm.vue';
 defineProps<{
     document: { slug: string; title: string; icon: string; html: string };
 }>();
@@ -26,8 +27,11 @@ function printDocument() {
                 >
             </nav>
         </header>
-        <main class="legal-shell">
-            <aside class="legal-sidebar">
+        <main
+            class="legal-shell"
+            :class="{ 'contact-shell': document.slug === 'contact' }"
+        >
+            <aside v-if="document.slug !== 'contact'" class="legal-sidebar">
                 <span class="eyebrow">TRANSPARENȚĂ ȘI DREPTURI</span>
                 <nav aria-label="Pagini juridice">
                     <Link
@@ -51,11 +55,20 @@ function printDocument() {
                     <div class="legal-document-icon">
                         <Icon :name="document.icon" :size="26" />
                     </div>
-                    <span class="eyebrow"
-                        >IPONTAJ · DOCUMENTELE SERVICIULUI</span
-                    >
+                    <span class="eyebrow">{{
+                        document.slug === 'contact'
+                            ? 'IPONTAJ · SUNTEM AICI SĂ TE AJUTĂM'
+                            : 'IPONTAJ · DOCUMENTELE SERVICIULUI'
+                    }}</span>
                     <h1>{{ document.title }}</h1>
-                    <div class="legal-document-meta">
+                    <p v-if="document.slug === 'contact'" class="contact-lead">
+                        Ai o întrebare despre pontaj sau abonament? Scrie-ne și
+                        revenim la adresa ta de email.
+                    </p>
+                    <div
+                        v-if="document.slug !== 'contact'"
+                        class="legal-document-meta"
+                    >
                         <span
                             >Versiunea {{ legal.version }} ·
                             {{ legal.date }}</span
@@ -70,37 +83,52 @@ function printDocument() {
                             Tipărește
                         </button>
                     </div>
-                    <section
-                        class="legal-operator-card"
-                        aria-label="Identificarea operatorului"
+                    <div
+                        :class="{ 'contact-grid': document.slug === 'contact' }"
                     >
-                        <strong>{{ legal.operator.name }}</strong>
-                        <p>
-                            CIF {{ legal.operator.cif }} · ONRC
-                            {{ legal.operator.register }}
-                        </p>
-                        <p>{{ legal.operator.address }}</p>
-                        <p>
-                            <a :href="`mailto:${legal.operator.email}`">{{
-                                legal.operator.email
-                            }}</a>
-                            ·
-                            <a :href="`tel:+4${legal.operator.phone}`">{{
-                                legal.operator.phone
-                            }}</a>
-                        </p>
-                        <p>
-                            Neînregistrat în scopuri de TVA ·
-                            {{ legal.operator.domain }}
-                        </p>
-                    </section>
+                        <ContactForm v-if="document.slug === 'contact'" />
+                        <section
+                            class="legal-operator-card"
+                            aria-label="Identificarea operatorului"
+                        >
+                            <strong>{{ legal.operator.name }}</strong>
+                            <p>
+                                CIF {{ legal.operator.cif }} · ONRC
+                                {{ legal.operator.register }}
+                            </p>
+                            <p>{{ legal.operator.address }}</p>
+                            <p>
+                                <a :href="`mailto:${legal.operator.email}`">{{
+                                    legal.operator.email
+                                }}</a>
+                                ·
+                                <a :href="`tel:+4${legal.operator.phone}`">{{
+                                    legal.operator.phone
+                                }}</a>
+                            </p>
+                            <p>
+                                Neînregistrat în scopuri de TVA ·
+                                {{ legal.operator.domain }}
+                            </p>
+                        </section>
+                    </div>
                     <a
                         v-if="document.slug === 'retragere'"
                         href="#request-form-title"
                         class="button primary legal-withdrawal-action"
                         >Completează declarația de retragere</a
                     >
-                    <div class="legal-prose" v-html="document.html" />
+                    <details
+                        v-if="document.slug === 'contact'"
+                        class="contact-legal-details"
+                    >
+                        <summary>
+                            Informații despre contact, reclamații și drepturile
+                            tale
+                        </summary>
+                        <div class="legal-prose" v-html="document.html" />
+                    </details>
+                    <div v-else class="legal-prose" v-html="document.html" />
                     <section
                         v-if="
                             [
@@ -160,6 +188,19 @@ function printDocument() {
                         class="legal-infrastructure"
                     >
                         <h2>Configurarea tehnică actuală</h2>
+                        <p>
+                            Protecție Turnstile:
+                            {{
+                                usePage().props.turnstile.enabled
+                                    ? 'activată pe formularele protejate'
+                                    : 'neactivată'
+                            }}. Analiza opțională:
+                            {{
+                                usePage().props.cookieSettings.analyticsToken
+                                    ? 'disponibilă numai după acord'
+                                    : 'neconfigurată'
+                            }}.
+                        </p>
                         <p>
                             Sesiune: {{ legal.session_minutes }} minute de
                             inactivitate. „Ține-mă minte”: până la

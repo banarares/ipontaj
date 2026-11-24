@@ -2,7 +2,7 @@
 
 ## Verificat local
 
-- **139 teste PHP, 974 aserțiuni: trecute**, pe SQLite. Ultima execuție locală MySQL 8.0.46 a verificat 136 de teste și 917 aserțiuni; matricea GitHub verifică versiunea curentă pe cele trei motoare.
+- **157 teste PHP, 1176 aserțiuni: trecute**, atât pe SQLite, cât și pe un MySQL 8.0.46 temporar izolat. Ultima matrice GitHub a verificat commitul publicat anterior. Modificările locale curente nu au fost trimise în CI.
 - PHPStan/Larastan, nivel 7: fără erori.
 - Verificare TypeScript Vue: trecută.
 - Testele frontend ale estimatorului de parolă: trecute.
@@ -77,3 +77,23 @@ Scanarea istoricului existent a acoperit 8 commituri, 4 arbori și 135 de blobur
 ## Texte pentru publicare
 
 Versiunea juridică `2026-11-24.2` elimină notele temporare din textele publice și adaugă GitHub la pagina Licență, alături de arhiva locală a sursei. Testele verifică păstrarea integrală a dovezilor versiunii precedente, refuzul cheilor Stripe live și diferențierea checkoutului demonstrativ. Bannerul public a fost eliminat independent de verificările de pregătire a infrastructurii, care rămân active.
+
+## Cloudflare, contact, cookie-uri și SEO — modificări locale
+
+Testele noi acoperă mesajele de contact criptate și păstrarea lor la eșecul notificării, honeypot și rate limiting, validarea Turnstile pe cele trei POST-uri, hostname/acțiune, reutilizarea tokenului, timeout, configurare incompletă și refuzul cheilor dummy în producție. Proxy-ul acceptă antetele numai de la intervalele Cloudflare configurate și nu acceptă hostul redirecționat.
+
+În browser, pe o bază separată cu emailuri dezactivate, au trecut contactul, footerul pe desktop/mobil, absența lui pe login/register, refuzul și persistența preferințelor, acceptarea și retragerea analizei și lipsa beaconului în cont. Tranziția către login și intrarea în demo cu analiză acceptată închid documentul public înainte de încărcarea ecranelor private. Widgetul Cloudflare real și Siteverify au fost verificate cu cheile publice oficiale de test pentru înregistrare, autentificare și contact, inclusiv adaptarea la 320 px. Cheile clientului nu au fost configurate sau afișate.
+
+Fluxul complet de pontaj a fost repetat fără alegerea inițială a cookie-urilor: confirmare, corectură, export Excel, modal pe desktop/mobil și ieșire din demo, fără erori JavaScript. Meniul lateral rezervă spațiul bannerului; comenzile de salvare și creare a contului rămân accesibile. Câmpurile început/sfârșit sunt în continuare aliniate în ambele intervale.
+
+SEO are conținut HTML inițial pe pagina principală, canonical, metadate sociale și JSON-LD fără ratinguri inventate, sitemap limitat la paginile publice și noindex pentru cont. Metadatele se schimbă corect la navigarea Inertia. Configurarea locală rămâne neindexabilă implicit. Nu s-au făcut verificări de proprietate DNS, înregistrare Search Console sau cereri de indexare.
+
+Documentele active sunt `2026-11-24.3`; versiunile precedente sunt păstrate. Instrucțiunile de operare sunt în [CLOUDFLARE_SEO.md](CLOUDFLARE_SEO.md). La cererea titularului, aceste modificări rămân locale, fără commit sau push; rezultatele CI ale commiturilor anterioare nu reprezintă o verificare a lor.
+
+## Colegi fără cont, pontaj istoric și footer
+
+Opt teste noi verifică asumarea explicită pentru colegii fără email, absența unui cont/invitații fictive, izolarea pe firme și drepturile proprietarului, limita comună cu invitațiile, mementourile oprite, numele în Excel/JSON și aprobarea responsabilului fără a atribui confirmarea angajatului. Corectarea primei zile necesită confirmare și motiv, este auditată și se anulează integral dacă intervalele sunt invalide; nu deschide pauze de inactivitate, luni aprobate sau zile viitoare. Testul cu procese concurente verifică acum și cursa dintre o invitație și un coleg fără cont pentru ultimul loc.
+
+Browserul a verificat formularul fără email pe mobil, salvarea și reîncărcarea pontajului, extinderea explicită a datei de început și footerul discret cu date legale extensibile, fără erori JavaScript. Între tabelul istoricului și buton sunt 22 px. Fluxul demo, corectura, exportul și navigarea mobilă au fost repetate cu succes. Capturile sunt `history-spacing-desktop.png`, `past-day-confirmation.png`, `managed-member-mobile.png` și `authenticated-footer-*`.
+
+Migrarea locală a fost aplicată după un backup SQLite consistent privat. La instalarea pe găzduire trebuie aplicate migrările din release; nu se copiază baza fictivă a testelor.

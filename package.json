@@ -3,13 +3,15 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "branding:build": "node scripts/build-brand-assets.mjs",
         "build": "vp build",
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "vue-tsc --noEmit",
-        "test:passwords": "node --test tests/frontend/password-strength.test.ts"
+        "test:passwords": "node --test tests/frontend/password-strength.test.ts",
+        "test:cookies": "node --test tests/frontend/cookie-consent.test.ts"
     },
     "dependencies": {
         "@fontsource/inter": "^5.3.0",

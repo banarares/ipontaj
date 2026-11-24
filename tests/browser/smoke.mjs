@@ -39,6 +39,13 @@ await page.getByRole('heading', { name: '8 h', exact: true }).waitFor();
 console.log('edit');
 await page.getByRole('button', { name: 'Modifică orele', exact: true }).click();
 await page.getByRole('dialog').waitFor();
+// A visitor can use the demo before making a cookie choice.
+await page
+    .getByRole('complementary', { name: 'Preferințe pentru cookie-uri' })
+    .waitFor();
+await page
+    .getByRole('button', { name: 'Salvează ziua', exact: true })
+    .click({ trial: true });
 await page.getByRole('button', { name: 'Adaugă interval sau pauză' }).click();
 const alignment = await page
     .locator('.interval-editor .two-columns')
@@ -84,8 +91,16 @@ assert.equal(
     await page
         .getByRole('button', { name: 'Modifică orele', exact: true })
         .count(),
-    0,
+    1,
 );
+await page.getByRole('button', { name: 'Modifică orele', exact: true }).click();
+assert.equal(
+    await page
+        .getByRole('checkbox', { name: /Confirm că persoana era activă/ })
+        .isChecked(),
+    false,
+);
+await page.getByRole('button', { name: 'Renunță', exact: true }).click();
 await page.goto(base + '/today');
 console.log('month');
 await page.locator('nav a[href="/month"]').click();
@@ -112,6 +127,9 @@ await page.screenshot({
 });
 await page.getByRole('button', { name: 'Modifică orele', exact: true }).click();
 await page.getByRole('dialog').waitFor();
+await page
+    .getByRole('button', { name: 'Salvează ziua', exact: true })
+    .click({ trial: true });
 await page.screenshot({ path: 'docs/screenshots/day-modal-mobile.png' });
 await page.getByRole('button', { name: 'Renunță', exact: true }).click();
 await page.getByRole('button', { name: 'Deschide meniul' }).click();

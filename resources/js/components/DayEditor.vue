@@ -52,11 +52,19 @@ const form = useForm({
     absence: props.entry?.absence || '',
     note: props.entry?.note || '',
     reason: '',
+    extend_period: false,
     intervals: [] as { kind: string; start_at: string; end_at: string }[],
 });
 const localError = ref('');
+const beforeStart = computed(
+    () => props.date < props.member.joined_on.slice(0, 10),
+);
 const correction = computed(
-    () => props.owner && (!!props.entry || props.member.role !== 'owner'),
+    () =>
+        props.owner &&
+        (!!props.entry ||
+            beforeStart.value ||
+            (!props.member.managed && props.member.role !== 'owner')),
 );
 function save() {
     localError.value = '';
@@ -233,6 +241,27 @@ onUnmounted(() => dialog.value?.close());
                     noapte, alege data următoare la sfârșit.
                 </p>
             </div>
+            <div v-if="beforeStart && owner" class="period-confirmation">
+                <p>
+                    Pontajul începe momentan la
+                    {{ readableDate(member.joined_on.slice(0, 10)) }}. Dacă
+                    persoana lucra deja în echipă, poți corecta începutul la
+                    {{ readableDate(date) }}. Modificarea se păstrează în
+                    istoric.
+                </p>
+                <label class="checkbox-label"
+                    ><input
+                        v-model="form.extend_period"
+                        type="checkbox"
+                        required
+                    />Confirm că persoana era activă în echipă începând cu
+                    această zi.</label
+                >
+            </div>
+            <p v-if="member.managed" class="info-note">
+                Coleg fără cont. Înregistrezi și aprobi orele ca responsabil al
+                echipei; nu se solicită confirmarea angajatului.
+            </p>
             <label
                 >Observații <span class="muted">(opțional)</span
                 ><textarea
@@ -262,7 +291,7 @@ onUnmounted(() => dialog.value?.close());
             >
                 {{ error }}
             </p>
-            <p v-if="form.absence" class="info-note">
+            <p v-if="form.absence && !member.managed" class="info-note">
                 <Icon name="alert" :size="18" /> Absența va fi verificată de
                 proprietar.
             </p>

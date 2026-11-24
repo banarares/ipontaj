@@ -12,17 +12,18 @@ export interface Company {
 }
 export interface Member {
     id: number;
-    user_id: number;
+    user_id: number | null;
+    managed: boolean;
     role: 'owner' | 'employee';
     active: boolean;
     tracked: boolean;
     reminders: boolean;
     user: {
-        id: number;
+        id: number | null;
         name: string;
         first_name: string;
         last_name: string;
-        email: string;
+        email: string | null;
     };
     joined_on: string;
 }

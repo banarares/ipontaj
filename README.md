@@ -19,6 +19,7 @@ Un push în repository nu publică aplicația și nu activează plăți. Reposit
 
 - Conturi cu nume și prenume separate, parole cu reguli comune pe server și indicator de siguranță, recuperare și autentificare în doi pași.
 - Firme izolate, proprietari și angajați, apartenențe multiple și invitații individuale cu expirare/revocare.
+- Colegi fără email și fără cont, cu asumarea explicită a pontajului de către proprietar; orele sunt înregistrate și aprobate de responsabil.
 - CIF și denumire salvate împreună; căutare în serviciul public ANAF, cu completare manuală marcată ca neverificată când serviciul nu răspunde.
 - Configurare personală fără CIF pentru consumatori.
 - Programe istorice, intervale multiple, pauze, ture de noapte și schimbările orei.
@@ -88,11 +89,17 @@ Implicit, `MAIL_MAILER=log`: emailurile nu sunt expediate extern. Tratează logu
 4. Confirmă ziua sau ajustează intervalele și absențele.
 5. Verifică luna și descarcă Excelul. Aprobarea unei luni încheiate cere rezolvarea înregistrărilor lipsă și a excepțiilor.
 
+În formularul „Invită un coleg”, opțiunea „Colegul nu are adresă de email” permite adăugarea directă în echipă, cu nume, prenume, începutul pontajului și confirmarea responsabilității. Nu creează cont sau email fictiv; colegul ocupă un loc în plan. Proprietarul îi completează orele din Pontaj lunar.
+
+Pentru o zi anterioară datei inițiale a pontajului, proprietarul poate confirma în editor că persoana era deja activă și trebuie să scrie motivul corectării începutului. Acțiunea este auditată; nu elimină pauzele de inactivitate și nu schimbă luni aprobate fără redeschiderea lor. Înregistrarea retroactivă într-o perioadă deja activă funcționează fără această extindere.
+
 ![Editorul zilnic, cu intervale aliniate](docs/screenshots/day-modal-desktop.png)
 
 [Interfață mobilă](docs/screenshots/employee-mobile.png) · [Parole și înregistrare](docs/screenshots/register-password-desktop.png) · [Pagini juridice](docs/screenshots/legal-desktop.png)
 
 ## Verificări înainte de un pull request
+
+Simbolul folosit în interfață este `public/favicon.svg`. După modificarea lui, rulează `npm run branding:build` pentru a regenera pictogramele PWA, Apple Touch, ICO și simbolul din imaginea socială. Comanda folosește Chromium instalat prin Playwright (`npx playwright install chromium`) sau calea din `CHROME_PATH`; fișierele rezultate sunt incluse în repository și nu cer Chromium pe găzduire. Imaginile de partajare `public/branding/social-card.svg` și `.png` sunt folosite de metadatele SEO.
 
 ```bash
 python3 scripts/check-secrets.py
@@ -123,6 +130,7 @@ BASE_URL=http://127.0.0.1:8000 node tests/browser/owner-employee.mjs
 BASE_URL=http://127.0.0.1:8000 node tests/browser/password-and-names.mjs
 BASE_URL=http://127.0.0.1:8000 node tests/browser/company-lookup.mjs
 BASE_URL=http://127.0.0.1:8000 node tests/browser/legal.mjs
+BASE_URL=http://127.0.0.1:8000 node tests/browser/managed-attendance.mjs
 ```
 
 Pentru un Chromium existent, setează `CHROME_PATH`. Nu rula aceste fluxuri pe producție. Testele PHP izolează baza și cheile Stripe; verificarea externă Stripe este o operațiune separată, numai în test. Raportul și limitele verificării sunt în [docs/VERIFICATION.md](docs/VERIFICATION.md).
@@ -162,3 +170,7 @@ php artisan pontaj:legal:check
 ```
 
 Arhiva oferită la `/cod-sursa` exclude configurarea secretă și datele runtime. Verificarea juridică raportează demersurile de lansare neconfirmate; generarea paginilor sau a arhivei nu certifică îndeplinirea lor.
+
+## Cloudflare și paginile publice
+
+Turnstile pentru autentificare, înregistrare și contact, preferințe pentru cookie-uri și pregătirea indexării se configurează prin `.env`. [Ghidul Cloudflare și SEO](docs/CLOUDFLARE_SEO.md) descrie cheile, proxy-urile de încredere, analiza opțională și pașii Search Console. Integrările sunt dezactivate implicit; datele de test și cheile locale rămân în afara repositoryului.

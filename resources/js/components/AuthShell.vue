@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import Brand from './Brand.vue';
 import LegalFooter from './LegalFooter.vue';
+const footerVisible = computed(
+    () => !['auth/Login', 'auth/Register'].includes(usePage().component),
+);
 </script>
 <template>
     <div class="auth-page">
@@ -22,7 +26,7 @@ import LegalFooter from './LegalFooter.vue';
         <main class="auth-main">
             <div class="auth-form">
                 <Link href="/" class="brand"><Brand /></Link><slot />
-                <LegalFooter compact />
+                <LegalFooter v-if="footerVisible" compact />
             </div>
         </main>
     </div>

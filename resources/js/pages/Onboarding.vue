@@ -36,8 +36,8 @@ const form = useForm({
                 }}
             </h1>
             <p>
-                Începem cu programul obișnuit. Colegii vor confirma zilnic orele
-                efectiv lucrate.
+                Începem cu programul obișnuit. Colegii cu cont își confirmă
+                orele, iar tu poți completa pontajul celor fără email.
             </p>
             <div class="onboarding-customer-field">
                 <label for="customer-type">Folosesc iPontaj</label
