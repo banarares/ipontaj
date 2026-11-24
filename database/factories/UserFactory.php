@@ -2,14 +2,21 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
     /**
      * Define the model's default state.
      *
@@ -18,11 +25,17 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+            'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            /* @chisel-2fa */
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+            /* @end-chisel-2fa */
         ];
     }
 
@@ -35,4 +48,18 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /* @chisel-2fa */
+    /**
+     * Indicate that the model has two-factor authentication configured.
+     */
+    public function withTwoFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_secret' => encrypt('secret'),
+            'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
+            'two_factor_confirmed_at' => now(),
+        ]);
+    }
+    /* @end-chisel-2fa */
 }

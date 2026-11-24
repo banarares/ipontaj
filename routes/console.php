@@ -1,19 +1,48 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
+use App\Jobs\SendReminder;
+use App\Models\Company;
+use App\Models\User;
+use App\Services\AttendanceService;
+use Carbon\CarbonImmutable as Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 
-/*
-|--------------------------------------------------------------------------
-| Console Routes
-|--------------------------------------------------------------------------
-|
-| This file is where you may define all of your Closure based console
-| commands. Each Closure is bound to a command instance allowing a
-| simple approach to interacting with each command's IO methods.
-|
-*/
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+Artisan::command('pontaj:remind', function (AttendanceService $attendance) {
+    Company::where('is_demo', false)->where('reminders', true)->chunkById(100, function ($companies) use ($attendance) {
+        foreach ($companies as $company) {
+            $now = now($company->timezone);
+            foreach ($company->memberships()->where('active', true)->where('reminders', true)->get() as $member) {
+                // Include yesterday to handle overnight shifts.
+                foreach ([$now->toDateString(), $now->subDay()->toDateString()] as $date) {
+                    $schedule = $attendance->schedule($member, $date);
+                    if (! $schedule) {
+                        continue;
+                    }
+                    $end = Carbon::parse($date.' '.$schedule->end_time, $company->timezone);
+                    $start = Carbon::parse($date.' '.$schedule->start_time, $company->timezone);
+                    if ($end <= $start) {
+                        $end = $end->addDay();
+                    }
+                    if ($now >= $end->addMinutes(30) && $now < $end->addHours(6)) {
+                        SendReminder::dispatch($company->id, $member->id, $date);
+                    }
+                }
+                if ($member->role === 'owner' && $now->hour >= 19 && $now->hour < 21) {
+                    SendReminder::dispatch($company->id, $member->id, $now->toDateString(), true);
+                }
+            }
+        }
+    });
+    $this->info('Mementourile eligibile au fost trimise în coadă.');
+})->purpose('Mementouri pentru zile neconfirmate, în fusul firmei');
+Artisan::command('pontaj:clean-demo', function () {
+    DB::transaction(function () {
+        Company::where('is_demo', true)->where('created_at', '<', now()->subDay())->delete();
+        User::where('is_demo', true)->where('created_at', '<', now()->subDay())->delete();
+    });
+    $this->info('Datele demo expirate au fost șterse.');
+});
+Schedule::command('pontaj:remind')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('pontaj:clean-demo')->hourly()->withoutOverlapping();

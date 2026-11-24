@@ -1,0 +1,26 @@
+{
+    "id": "/",
+    "name": "iPontaj · Timp pentru ce contează",
+    "short_name": "iPontaj",
+    "description": "Confirmă ziua și pregătește pontajul echipei.",
+    "lang": "ro",
+    "start_url": "/dashboard",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f7f9f8",
+    "theme_color": "#176f56",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
