@@ -9,11 +9,31 @@ import {
     watch,
 } from 'vue';
 import {
+    cookieDomains,
+    googleAnalyticsCookies,
     readCookieChoice,
     saveCookieChoice,
     type CookieChoice,
 } from '@/lib/cookieConsent';
+declare global {
+    interface Window {
+        dataLayer?: unknown[];
+    }
+}
 const settings = computed(() => usePage().props.cookieSettings);
+const available = computed(
+    () => !!settings.value.analyticsToken || !!settings.value.gtmId,
+);
+const providers = computed(() =>
+    [
+        settings.value.analyticsToken ? 'Cloudflare Web Analytics' : '',
+        settings.value.gtmId
+            ? 'Google Analytics (prin Google Tag Manager)'
+            : '',
+    ]
+        .filter(Boolean)
+        .join(' și '),
+);
 const visible = ref(false),
     details = ref(false),
     analytics = ref(false),
@@ -22,28 +42,70 @@ const panel = ref<HTMLElement | null>(null);
 let observer: ResizeObserver | undefined;
 let beaconLoaded = false;
 let removeVisitListener: (() => void) | undefined;
-function activateAnalytics() {
-    if (
-        !analytics.value ||
-        !settings.value.analyticsToken ||
-        !settings.value.analyticsAllowed ||
-        beaconLoaded
-    )
-        return;
+function appendScript(src: string, configure: (s: HTMLScriptElement) => void) {
     const script = document.createElement('script');
-    script.dataset.optionalAnalytics = 'cloudflare';
-    script.dataset.cfBeacon = JSON.stringify({
-        token: settings.value.analyticsToken,
-        spa: false,
-    });
-    script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
-    script.defer = true;
+    configure(script);
+    script.src = src;
     const nonce = document.querySelector<HTMLMetaElement>(
         'meta[name="csp-nonce"]',
     )?.content;
     if (nonce) script.nonce = nonce;
     document.head.appendChild(script);
+}
+function gtag(...args: unknown[]) {
+    void args;
+    // GTM recognises gtag commands only as an Arguments object, not as an array.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments);
+}
+function activateAnalytics() {
+    if (
+        !analytics.value ||
+        !available.value ||
+        !settings.value.analyticsAllowed ||
+        beaconLoaded
+    )
+        return;
+    const { analyticsToken, gtmId } = settings.value;
+    if (analyticsToken)
+        appendScript(
+            'https://static.cloudflareinsights.com/beacon.min.js',
+            (script) => {
+                script.dataset.optionalAnalytics = 'cloudflare';
+                script.dataset.cfBeacon = JSON.stringify({
+                    token: analyticsToken,
+                    spa: false,
+                });
+                script.defer = true;
+            },
+        );
+    if (gtmId) {
+        window.dataLayer = window.dataLayer || [];
+        // Consent Mode v2: the visitor accepted statistics only, never advertising.
+        gtag('consent', 'default', {
+            analytics_storage: 'granted',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+        });
+        window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+        appendScript(
+            'https://www.googletagmanager.com/gtm.js?id=' +
+                encodeURIComponent(gtmId),
+            (script) => {
+                script.dataset.optionalAnalytics = 'google-tag-manager';
+                script.async = true;
+            },
+        );
+    }
     beaconLoaded = true;
+}
+function removeGoogleCookies() {
+    for (const name of googleAnalyticsCookies(document.cookie)) {
+        for (const domain of cookieDomains(window.location.hostname)) {
+            document.cookie = `${name}=; Max-Age=0; Path=/${domain ? `; Domain=${domain}` : ''}`;
+        }
+    }
 }
 function loadPreference() {
     let value: CookieChoice | null = null;
@@ -52,17 +114,16 @@ function loadPreference() {
     } catch {
         /* Storage can be unavailable. Optional analytics stays off. */
     }
-    analytics.value = !!value?.analytics && !!settings.value.analyticsToken;
+    analytics.value = !!value?.analytics && available.value;
     visible.value = !value;
     if (analytics.value) activateAnalytics();
+    else removeGoogleCookies();
 }
 function choose(choice: CookieChoice['choice']) {
     const allowed =
         choice === 'accepted'
-            ? !!settings.value.analyticsToken
-            : choice === 'custom' &&
-              analytics.value &&
-              !!settings.value.analyticsToken;
+            ? available.value
+            : choice === 'custom' && analytics.value && available.value;
     try {
         saveCookieChoice(
             window.localStorage,
@@ -85,6 +146,7 @@ function choose(choice: CookieChoice['choice']) {
     analytics.value = allowed;
     visible.value = false;
     details.value = false;
+    if (!allowed) removeGoogleCookies();
     if (!allowed && beaconLoaded) {
         // Reload terminates the provider's event listeners as well as the script element.
         window.location.reload();
@@ -153,7 +215,7 @@ onBeforeUnmount(() => {
             <strong>Tu alegi ce ne permiți</strong>
             <p>
                 Folosim cookie-uri necesare pentru autentificare și securitate.
-                <template v-if="settings.analyticsToken"
+                <template v-if="available"
                     >Analiza utilizării este opțională și pornește doar dacă
                     accepți.</template
                 ><template v-else
@@ -173,11 +235,11 @@ onBeforeUnmount(() => {
                 ><input
                     v-model="analytics"
                     type="checkbox"
-                    :disabled="!settings.analyticsToken"
+                    :disabled="!available"
                 />Analiza utilizării
                 <span>{{
-                    settings.analyticsToken
-                        ? 'Cloudflare Web Analytics, numai cu acordul tău.'
+                    available
+                        ? `${providers}, numai cu acordul tău.`
                         : 'Nu folosim analiză opțională în această instalare.'
                 }}</span></label
             >

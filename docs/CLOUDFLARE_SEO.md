@@ -53,17 +53,31 @@ Registrul este disponibil numai din consola operatorului; nu există o adresă p
 
 Bannerul are acceptare, refuz și alegere personalizată, fără selectarea implicită a analizei. Cookie-urile necesare și protecția Turnstile funcționează independent de analiza opțională. Preferința locală include versiunea informării și data și expiră după 180 de zile. Modificarea versiunii ori activarea unei categorii indisponibile anterior solicită din nou alegerea. „Setări cookie-uri” permite retragerea acordului.
 
-Nu este instalat Google Analytics și nu sunt incluși pixeli publicitari. Opțional, poți configura Cloudflare Web Analytics:
+Nu sunt incluși pixeli publicitari. Opțional, poți configura Cloudflare Web Analytics și/sau Google Analytics prin Google Tag Manager:
 
 ```dotenv
 CLOUDFLARE_WEB_ANALYTICS_TOKEN=
+GOOGLE_TAG_MANAGER_ID=GTM-XXXXXXX
 ```
 
 Tokenul beacon este public, dar configurarea rămâne în `.env`. Folosește integrarea manuală și **dezactivează injectarea automată a beaconului din panoul Cloudflare**; o inserare făcută independent la edge nu poate fi controlată de bannerul aplicației.
 
 Beaconul se încarcă numai după acord, pe prezentarea publică și contact, fără navigarea SPA a furnizorului. La părăsirea documentului public cu analiză activă, navigarea GET face o încărcare completă, iar intrarea în demo folosește un POST nativ, pentru a termina ascultătorii înainte de deschiderea contului. Nu încărcăm analiza în ecranele autentificate, login/register, invitații sau recuperarea parolei. Retragerea acordului reîncarcă pagina și păstrează categoria refuzată. Dacă stocarea browserului nu funcționează, analiza rămâne oprită.
 
-Revizuiește acordurile Cloudflare, transferurile și informarea efectivă înaintea activării pe date reale. Documentele active sunt `2026-11-24.3`; versiunile precedente și dovezile deja acceptate sunt păstrate.
+Revizuiește acordurile Cloudflare, transferurile și informarea efectivă înaintea activării pe date reale. Documentele active sunt `2026-11-25.2`; versiunile precedente și dovezile deja acceptate sunt păstrate.
+
+### Google Tag Manager / Google Analytics
+
+Nu lipi snippetul GTM în `app.blade.php`: s-ar încărca înaintea acordului și ar fi blocat de CSP. Setează doar `GOOGLE_TAG_MANAGER_ID`; ID-urile care nu au forma `GTM-XXXXXXX` sunt ignorate. Bannerul încarcă `gtm.js` cu nonce CSP, în aceleași condiții ca beaconul Cloudflare, după ce setează Consent Mode v2 cu `analytics_storage: granted` și `ad_storage`, `ad_user_data`, `ad_personalization: denied`. La retragerea acordului, cookie-urile `_ga*`, `_gid` și `_gat*` sunt șterse, iar pagina se reîncarcă.
+
+În containerul GTM:
+
+1. Adaugă o etichetă **Google tag** cu ID-ul de măsurare GA4 (`G-…`), declanșată pe **Initialization – All Pages**.
+2. Nu adăuga etichete Google Ads, Floodlight, Meta sau alte pixeli. CSP-ul permite doar `www.googletagmanager.com` pentru scripturi și domeniile Google Analytics pentru colectare; orice alt furnizor va fi blocat și ar necesita actualizarea documentelor legale.
+3. În GA4, la **Admin → Data collection**, lasă **Google signals** și personalizarea reclamelor dezactivate și setează păstrarea datelor la 2 luni sau la durata asumată în documente.
+4. Publică containerul și verifică în **Tag Assistant** că eticheta pornește numai după „Acceptă toate”.
+
+Acceptă condițiile de prelucrare a datelor din GA4 (**Admin → Account settings → Data processing terms**) înainte de activare.
 
 ## Pregătire Google
 

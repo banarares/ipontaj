@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Notifications\ContactMessageReceived;
+use App\Services\LegalDocuments;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -163,6 +164,30 @@ class PublicWebsiteTest extends TestCase
         $this->assertStringNotContainsString('cloudflareinsights.com', $csp);
         config(['cloudflare.analytics_token' => 'public-analytics-fixture']);
         $this->assertStringContainsString('https://static.cloudflareinsights.com', $this->get('/login')->headers->get('Content-Security-Policy'));
+        $this->assertStringNotContainsString('googletagmanager.com', $this->get('/login')->headers->get('Content-Security-Policy'));
+        config(['analytics.google_tag_manager_id' => 'GTM-TT8H4579']);
+        $csp = $this->get('/login')->headers->get('Content-Security-Policy');
+        $this->assertMatchesRegularExpression("/script-src [^;]*https:\/\/www\.googletagmanager\.com/", $csp);
+        $this->assertMatchesRegularExpression("/connect-src [^;]*https:\/\/\*\.google-analytics\.com/", $csp);
+        $this->assertStringNotContainsString('doubleclick', $csp);
+    }
+
+    public function test_google_tag_manager_is_exposed_only_with_a_valid_id_and_changes_the_consent_version(): void
+    {
+        $settings = fn () => $this->get('/')->viewData('page')['props']['cookieSettings'];
+        $this->assertNull($settings()['gtmId']);
+        $withoutGtm = $settings()['version'];
+        config(['analytics.google_tag_manager_id' => 'GTM-TT8H4579']);
+        $this->assertSame('GTM-TT8H4579', $settings()['gtmId']);
+        $this->assertNotSame($withoutGtm, $settings()['version']);
+        $this->assertTrue(app(LegalDocuments::class)->facts()['google_analytics']);
+        foreach (['GTM-TT8H4579' => 'GTM-TT8H4579', ' gtm-abc1234 ' => 'GTM-ABC1234', 'GTM-x"><script>' => null, 'UA-12345-1' => null, '' => null] as $raw => $expected) {
+            putenv('GOOGLE_TAG_MANAGER_ID='.$raw);
+            $_ENV['GOOGLE_TAG_MANAGER_ID'] = $_SERVER['GOOGLE_TAG_MANAGER_ID'] = $raw;
+            $this->assertSame($expected, (require config_path('analytics.php'))['google_tag_manager_id']);
+        }
+        putenv('GOOGLE_TAG_MANAGER_ID');
+        unset($_ENV['GOOGLE_TAG_MANAGER_ID'], $_SERVER['GOOGLE_TAG_MANAGER_ID']);
     }
 
     public function test_llms_is_public_plain_text_with_canonical_links_and_has_a_singular_alias(): void

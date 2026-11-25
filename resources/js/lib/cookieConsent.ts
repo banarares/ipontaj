@@ -1,5 +1,23 @@
 export const CONSENT_KEY = 'ipontaj:cookie-preferences';
 export const CONSENT_DAYS = 180;
+const GOOGLE_ANALYTICS_COOKIE =
+    /^(_ga|_ga_[A-Za-z0-9]+|_gid|_gat(_[A-Za-z0-9_-]+)?)$/;
+/** Names of Google Analytics cookies present in a `document.cookie` string. */
+export function googleAnalyticsCookies(cookie: string): string[] {
+    return cookie
+        .split(';')
+        .map((part) => part.split('=')[0].trim())
+        .filter((name) => GOOGLE_ANALYTICS_COOKIE.test(name));
+}
+/** Host-only cookie plus every parent domain with at least two labels. */
+export function cookieDomains(hostname: string): (string | null)[] {
+    const labels = hostname.split('.');
+    const domains: (string | null)[] = [null];
+    for (let i = 0; i <= labels.length - 2; i++) {
+        domains.push(labels.slice(i).join('.'));
+    }
+    return domains;
+}
 export type CookieChoice = {
     version: string;
     savedAt: number;

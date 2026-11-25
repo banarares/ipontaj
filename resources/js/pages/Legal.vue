@@ -196,7 +196,8 @@ function printDocument() {
                                     : 'neactivată'
                             }}. Analiza opțională:
                             {{
-                                usePage().props.cookieSettings.analyticsToken
+                                usePage().props.cookieSettings.analyticsToken ||
+                                usePage().props.cookieSettings.gtmId
                                     ? 'disponibilă numai după acord'
                                     : 'neconfigurată'
                             }}.

@@ -38,7 +38,12 @@ class LegalSafety
             $turnstile = config('cloudflare.turnstile.enabled') ? ' https://challenges.cloudflare.com' : '';
             $analytics = config('cloudflare.analytics_token') ? ' https://static.cloudflareinsights.com' : '';
             $beacon = config('cloudflare.analytics_token') ? ' https://cloudflareinsights.com' : '';
-            $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'nonce-".Vite::cspNonce()."'".$turnstile.$analytics."; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'".$turnstile.$beacon."; frame-src 'self'".$turnstile."; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+            // Google Analytics 4 through GTM only; advertising and other tag hosts stay blocked.
+            $gtm = config('analytics.google_tag_manager_id');
+            $gtmScript = $gtm ? ' https://www.googletagmanager.com' : '';
+            $gtmCollect = $gtm ? ' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com' : '';
+            $gtmImage = $gtm ? ' https://*.google-analytics.com https://*.googletagmanager.com' : '';
+            $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'nonce-".Vite::cspNonce()."'".$turnstile.$analytics.$gtmScript."; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:".$gtmImage."; font-src 'self' data:; connect-src 'self'".$turnstile.$beacon.$gtmCollect."; frame-src 'self'".$turnstile."; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
             if ($request->isSecure()) {
                 $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
             }
