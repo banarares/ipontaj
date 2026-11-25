@@ -1,6 +1,6 @@
 # Lansarea juridică și operațională iPontaj
 
-Stare la 24 noiembrie 2026: implementare locală pentru revizuire, fără publicare și fără încasări live. Acest dosar este un instrument de lucru, nu un certificat de conformitate și nu dovedește încheierea unor contracte cu furnizorii. Documentele trebuie verificate în raport cu situația reală a PFA-ului; recomandăm o revizuire juridică și fiscală înainte de lansare.
+Stare la 24 noiembrie 2026: titularul a publicat instanța iPontaj.ro, iar resursele de configurare Stripe live au fost create. Încasările live rămân blocate în codul curent. Publicarea și existența resurselor nu confirmă contractele și testele operaționale. Acest dosar este un instrument de lucru, nu un certificat de conformitate. Documentele se verifică în raport cu situația reală a PFA-ului.
 
 ## Date confirmate de titular
 
@@ -24,10 +24,10 @@ Stare la 24 noiembrie 2026: implementare locală pentru revizuire, fără public
 | Cereri GDPR                   | Formular, confirmare, registru și termen calculat calendaristic; datele nu se divulgă unui solicitant neverificat                               |
 | Confirmare abonament          | La evenimentul Stripe semnat de checkout plătit, condiții exacte atașate emailului; verificare client/sesiune și deduplicare                    |
 | ANPC                          | Link vizibil ANPC și pictogramă SAL oficială actuală, servită local; fără pictograma SOL închisă                                                |
-| Cookie-uri                    | Inventar pentru funcțiile existente; fără analiză/marketing și fără banner fictiv de consimțământ                                               |
+| Cookie-uri                    | Preferințe de acceptare/refuz și categorii; analiza opțională configurată pornește numai cu acord, independent de funcțiile necesare            |
 | Securitate                    | Antete de protecție, CSP și HSTS în producție, fără a declara certificări inexistente                                                           |
 | AGPL                          | Arhivă de sursă din directoare permise; fără .env, baze de date, storage sau runtime; inventar și notificări de licență pentru dependențe       |
-| Verificarea lansării          | `pontaj:legal:check`; operațiunile de înregistrare/creare/checkout din producție refuză lansarea neconfirmată                                   |
+| Verificarea lansării          | `pontaj:legal:check`; checkoutul cu facturare activată verifică demersurile, independent de contul gratuit                                      |
 
 ## Ce trebuie finalizat în afara aplicației
 
@@ -128,3 +128,9 @@ Pentru operare rămân necesare confirmarea contractuală a locației și reten�
 ## Cloudflare și formularele publice
 
 Versiunea activă este `2026-11-24.3`. Include contactul salvat criptat și informarea despre serviciile Cloudflare configurabile, proxy, Turnstile și analiza publică opțională. Verifică acordul aplicabil contului și transferurile înainte de activarea serviciilor; nu este presupusă o localizare exclusiv în SEE. Bannerul separă măsurile necesare de analiza opțională, iar refuzul nu împiedică autentificarea. Ghidul de configurare este [CLOUDFLARE_SEO.md](CLOUDFLARE_SEO.md). Versiunile anterioare nu au fost rescrise.
+
+## Actualizare 25 noiembrie 2026
+
+Versiunea activă este `2026-11-25.1`, cu explicarea notificărilor interne și confirmării emailului. Versiunile anterioare rămân intacte pentru dovezile existente. Titularul a confirmat dreptul de a comercializa serviciul ca PFA și a asumat transmiterea manuală RO e-Factura folosind datele Stripe. Acest lucru nu este o integrare automată de raportare fiscală.
+
+Limitarea tehnică la chei Stripe test a fost eliminată. Activarea explicită, potrivirea modului cheilor/webhookurilor, prețul exact și condițiile acceptate sunt verificate la checkout; checklistul declarațiilor rămâne un raport pentru operator. Referințele istorice din acest dosar la blocarea exclusivă a plăților live descriu versiunile precedente. Nu s-au bifat automat acordurile sau procedurile neconfirmate.

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -69,7 +70,8 @@ class LegalTest extends TestCase
         $this->assertSame(hash('sha256', app(LegalDocuments::class)->text('termeni-si-conditii')), $acceptance->documents['termeni-si-conditii']['sha256']);
         $this->assertArrayNotHasKey('forged', $acceptance->documents);
         $this->assertFalse($acceptance->facts['operator']['vat_registered']);
-        $this->get('/acorduri/'.$acceptance->id)->assertOk()->assertSee('SHA-256')->assertSee('49 lei/lună');
+        User::firstOrFail()->forceFill(['email_verified_at' => now()])->save();
+        $this->actingAs(User::firstOrFail())->get('/acorduri/'.$acceptance->id)->assertOk()->assertSee('SHA-256')->assertSee('49 lei/lună');
         $this->actingAs(User::factory()->create())->get('/acorduri/'.$acceptance->id)->assertNotFound();
     }
 
@@ -197,15 +199,39 @@ class LegalTest extends TestCase
         Notification::assertSentOnDemandTimes(LegalRequestReceived::class, 2);
     }
 
-    public function test_production_keeps_public_information_accessible_but_refuses_unprepared_launch(): void
+    public function test_production_keeps_public_information_accessible_but_refuses_unprepared_paid_checkout(): void
     {
         $this->app->instance('env', 'production');
         $this->withoutMiddleware(PreventRequestForgery::class);
         $this->get('/termeni-si-conditii')->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('X-Frame-Options', 'DENY')->assertHeader('Content-Security-Policy');
-        $this->post('/register', $this->registration())->assertStatus(503);
         $this->assertDatabaseCount('users', 0);
+        config(['ipontaj.billing_enabled' => true, 'legal.publication_approved' => false]);
+        $owner = User::factory()->create();
+        $company = Company::create(['name' => 'Firmă fictivă']);
+        $company->memberships()->create(['user_id' => $owner->id, 'role' => 'owner', 'joined_on' => now()->toDateString()]);
+        app(LegalAgreements::class)->record($owner, 'account', ['termeni-si-conditii']);
+        app(LegalAgreements::class)->record($owner, 'company', ['acord-prelucrare-date'], $company);
+        $this->actingAs($owner)->post('/billing/checkout')->assertStatus(503);
         $this->artisan('pontaj:legal:check')->assertFailed();
-        $this->actingAs(User::factory()->create())->get('/dashboard')->assertRedirect('/acorduri');
+        $this->get('/dashboard')->assertOk();
+    }
+
+    public function test_free_production_registration_and_company_setup_do_not_falsify_launch_confirmations(): void
+    {
+        $this->app->instance('env', 'production');
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        config(['ipontaj.billing_enabled' => false, 'legal.publication_approved' => false]);
+        $this->post('/register', $this->registration())->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseHas('legal_acceptances', ['purpose' => 'account', 'version' => config('legal.version')]);
+        $this->assertGuest();
+        $user = User::firstOrFail();
+        $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/login');
+        $this->actingAs($user->refresh())->post('/companies', $this->company())->assertSessionHasNoErrors()->assertRedirect('/dashboard');
+        $this->assertDatabaseCount('companies', 1);
+        $this->assertFalse(config('legal.publication_approved'));
+        $this->assertNotEmpty(app(LegalReadiness::class)->blockers());
+        $this->artisan('pontaj:legal:check')->assertFailed();
     }
 
     public function test_source_archive_contains_installable_sources_but_no_runtime_data_or_secrets(): void
@@ -242,9 +268,9 @@ class LegalTest extends TestCase
         $company = Company::create(['name' => 'Spațiu de test', 'stripe_id' => 'cus_legal_fixture']);
         $acceptance = app(LegalAgreements::class)->record($owner, 'checkout', ['termeni-si-conditii', 'abonamente-si-anulare', 'retragere'], $company);
         $acceptance->update(['facts' => [...$acceptance->facts, 'checkout_session_id' => 'cs_legal_fixture', 'test_mode' => true]]);
-        config(['cashier.webhook.secret' => 'whsec_legal_fixture']);
+        config(['cashier.webhook.secret' => 'whsec_legal_fixture', 'cashier.secret' => 'sk_test_fixture']);
         $send = function (string $eventId, string $customer) use ($acceptance): void {
-            $body = json_encode(['id' => $eventId, 'type' => 'checkout.session.completed', 'data' => ['object' => ['id' => 'cs_legal_fixture', 'customer' => $customer, 'payment_status' => 'paid', 'metadata' => ['legal_acceptance_id' => (string) $acceptance->id]]]]);
+            $body = json_encode(['id' => $eventId, 'livemode' => false, 'type' => 'checkout.session.completed', 'data' => ['object' => ['id' => 'cs_legal_fixture', 'customer' => $customer, 'payment_status' => 'paid', 'metadata' => ['legal_acceptance_id' => (string) $acceptance->id]]]]);
             $time = time();
             $signature = hash_hmac('sha256', $time.'.'.$body, 'whsec_legal_fixture');
             $this->call('POST', '/stripe/webhook', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_STRIPE_SIGNATURE' => "t=$time,v1=$signature"], $body)->assertOk();

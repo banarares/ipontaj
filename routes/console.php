@@ -46,3 +46,6 @@ Artisan::command('pontaj:clean-demo', function () {
 });
 Schedule::command('pontaj:remind')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('pontaj:clean-demo')->hourly()->withoutOverlapping();
+Schedule::command('pontaj:logs:prune --apply')->dailyAt('03:20')
+    ->when(fn () => config('logging.default') === 'daily' && (int) config('legal.retention.log_days') > 0)
+    ->withoutOverlapping();

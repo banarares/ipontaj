@@ -19,7 +19,7 @@ class LegalCheckCommand extends Command
 
             return self::SUCCESS;
         }
-        $this->warn('Lansarea publică necesită finalizarea următoarelor:');
+        $this->warn('Demersuri declarate încă neconfirmate de operator (raport separat de disponibilitatea tehnică a plății):');
         foreach ($blockers as $blocker) {
             $this->line('• '.$blocker);
         }

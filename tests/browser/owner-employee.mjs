@@ -1,3 +1,4 @@
+import { confirmEmail } from './support/verification.mjs';
 import { chromium } from '@playwright/test';
 const browser = await chromium.launch({
     headless: true,
@@ -32,6 +33,7 @@ async function register(page, name, email) {
         .click();
 }
 await register(owner, 'Proprietar Fictiv', ownerEmail);
+await confirmEmail(owner, ownerEmail, password);
 await owner.waitForURL('**/onboarding');
 await owner.getByLabel('CIF', { exact: true }).fill('1234');
 await owner.getByLabel('Numele firmei').fill('Echipa de test browser');
@@ -81,6 +83,7 @@ await employee.getByLabel(/^Parola/).fill(password);
 await employee.getByLabel('Confirmă parola', { exact: true }).fill(password);
 await employee.getByRole('checkbox', { name: /Accept Termenii/ }).check();
 await employee.getByRole('button', { name: 'Creează contul gratuit' }).click();
+await confirmEmail(employee, employeeEmail, password);
 await employee.waitForURL('**/invite/**');
 await employee.getByRole('button', { name: 'Acceptă invitația' }).click();
 await employee.waitForURL('**/today');

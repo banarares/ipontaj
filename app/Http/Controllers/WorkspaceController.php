@@ -8,7 +8,9 @@ use App\Models\Membership;
 use App\Models\MonthClosure;
 use App\Models\TimeEntry;
 use App\Models\User;
+use App\Services\ActivityFeed;
 use App\Services\AttendanceService;
+use App\Services\BillingConfiguration;
 use App\Services\CompanyContext;
 use App\Services\CompanyIdentity;
 use App\Services\ExcelService;
@@ -46,7 +48,8 @@ class WorkspaceController extends Controller
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
         $month = $date ? substr($date, 0, 7) : ($request->input('month') ?: substr($today, 0, 7));
         $date ??= $month === substr($today, 0, 7) ? $today : $month.'-01';
-        $billingTestMode = config('ipontaj.billing_enabled') && str_starts_with((string) config('cashier.secret'), 'sk_test_');
+        $billing = app(BillingConfiguration::class);
+        $billingTestMode = config('ipontaj.billing_enabled') && $billing->testMode();
         $summary = $owner ? $this->attendance->summary($company, $month) : null;
         $members = $owner ? $company->memberships()->with('user')->orderBy('id')->get() : collect([$member->load('user')]);
         $entries = $company->entries()->with('intervals')->whereDate('date', '>=', $month.'-01')->whereDate('date', '<=', Carbon::parse($month.'-01')->endOfMonth()->toDateString())->when(! $owner, fn ($q) => $q->where('membership_id', $member->id))->get();
@@ -58,7 +61,7 @@ class WorkspaceController extends Controller
             'invitations' => $owner ? $company->invitations()->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now())->get() : [],
             'closure' => MonthClosure::where('company_id', $company->id)->where('month', $month)->first(),
             'audit' => $owner ? AuditEvent::with('user:id,first_name,last_name,name')->where('company_id', $company->id)->latest()->limit(20)->get() : [],
-            'seatLimit' => $company->seatLimit(), 'occupiedSeats' => $company->occupiedSeats(), 'billingEnabled' => config('ipontaj.billing_enabled'), 'billingReady' => $billingTestMode && filled(config('ipontaj.stripe_team_price')), 'billingTestMode' => $billingTestMode, 'subscribed' => $company->subscribed('default'), 'absences' => AttendanceService::ABSENCES,
+            'seatLimit' => $company->seatLimit(), 'occupiedSeats' => $company->occupiedSeats(), 'billingEnabled' => config('ipontaj.billing_enabled'), 'billingReady' => $billing->ready(), 'billingTestMode' => $billingTestMode, 'subscribed' => $company->subscribed('default'), 'absences' => AttendanceService::ABSENCES,
         ]);
     }
 
@@ -88,6 +91,7 @@ class WorkspaceController extends Controller
 
             return $company;
         }, 3);
+        app(ActivityFeed::class)->record($company, $request->user()->id, 'Firma a fost creată');
         $request->session()->put('company_id', $company->id);
 
         return redirect('/dashboard')->with('success', 'Firma este pregătită. Invită primul coleg.');
@@ -153,6 +157,8 @@ class WorkspaceController extends Controller
         $identity = app(CompanyIdentity::class)->attributes($company->is_demo ? null : ($data['cif'] ?? null), $data['name'], $company);
         $company->update([...$identity, 'reminders' => $data['reminders'], 'accountant_email' => $data['accountant_email'] ?? null, 'accountant_confirmed_at' => ! empty($data['accountant_email']) && $request->boolean('accountant_confirmed') ? now() : null]);
 
+        app(ActivityFeed::class)->record($company, $request->user()->id, 'Setările firmei au fost actualizate', '/settings');
+
         return back()->with('success', 'Setările au fost salvate.');
     }
 
@@ -168,6 +174,8 @@ class WorkspaceController extends Controller
             abort_if(MonthClosure::where('company_id', $company->id)->where('month', substr($data['effective_from'], 0, 7))->whereNotNull('approved_at')->exists(), 423);
             $company->schedules()->create($data);
         }, 3);
+
+        app(ActivityFeed::class)->record($company, $request->user()->id, 'Programul de lucru a fost actualizat', '/today', true);
 
         return back()->with('success', 'Programul a fost salvat cu data de intrare în vigoare.');
     }
@@ -186,6 +194,8 @@ class WorkspaceController extends Controller
             }$member->update(['active' => $data['active'], 'left_on' => $data['active'] ? null : now($company->timezone)->toDateString()]);
         }, 3);
 
+        app(ActivityFeed::class)->record($company, $request->user()->id, $data['active'] ? 'Coleg reactivat' : 'Coleg dezactivat', '/team');
+
         return back()->with('success', 'Starea colegului a fost actualizată.');
     }
 
@@ -194,6 +204,8 @@ class WorkspaceController extends Controller
         $member = $this->context->membership($request);
         $data = $request->validate(['reminders' => 'required|boolean']);
         $member->update($data);
+
+        app(ActivityFeed::class)->record($member->company, $request->user()->id, 'Preferințele au fost actualizate', '/today');
 
         return back()->with('success', 'Preferințele au fost salvate.');
     }

@@ -26,6 +26,6 @@ class ContactMessageReceived extends Notification implements ShouldQueue
         $data = $message->data;
 
         return (new MailMessage)->subject('iPontaj — mesaj de contact')->replyTo($data['email'], $data['first_name'].' '.$data['last_name'])
-            ->view('mail.contact', ['reference' => $message->id, 'data' => $data]);
+            ->markdown('mail.contact', ['reference' => $message->id, 'data' => $data]);
     }
 }

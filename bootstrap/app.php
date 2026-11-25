@@ -3,6 +3,7 @@
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LegalSafety;
+use App\Http\Middleware\RequireConfirmedEmail;
 use App\Http\Middleware\TrustCloudflareProxies;
 use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             HandleAppearance::class,
+            RequireConfirmedEmail::class,
             LegalSafety::class,
             HandleInertiaRequests::class,
             VerifyTurnstile::class,

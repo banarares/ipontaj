@@ -73,6 +73,24 @@ class ReleaseSecretChecks(unittest.TestCase):
         self.assertEqual(result['findings'][0]['rule'], 'configured-secret')
         self.assertNotIn(credential, output)
 
+    def test_blade_mail_overrides_are_source_and_still_scanned_for_credentials(self):
+        self.stage('resources/views/vendor/mail/html/header.blade.php', b'<div>iPontaj</div>')
+        self.assertEqual(self.scan('--staged')[0], 0)
+        credential = b'sk_' + b'live_' + b'A' * 24
+        self.stage('resources/views/vendor/notifications/email.blade.php', credential)
+        code, result, output = self.scan('--staged')
+        self.assertEqual(code, 1)
+        self.assertEqual(result['findings'][0]['rule'], 'stripe-key')
+        self.assertNotIn(credential.decode(), output)
+
+    def test_dependency_directories_and_non_template_vendor_files_remain_forbidden(self):
+        for path in ['vendor/example/file.php', 'resources/views/vendor/private.json', 'resources/views/vendor/.env']:
+            self.stage(path, b'private')
+        code, result, _ = self.scan('--staged')
+        self.assertEqual(code, 1)
+        self.assertEqual(len(result['findings']), 3)
+        self.assertTrue(all(item['rule'] == 'private-or-runtime-path' for item in result['findings']))
+
 
 if __name__ == '__main__':
     unittest.main()

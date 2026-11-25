@@ -46,6 +46,8 @@ Repornește procesul de coadă la fiecare release. Rulează permanent `php artis
 * * * * * cd /cale/catre/ipontaj && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+Pentru contul cPanel al operatorului, executabilul confirmat este `/usr/local/bin/ea-php83`. Exemplele complete de cron, inclusiv workerul limitat în timp și rapoartele private, sunt în [CPANEL_DEPLOY.md](CPANEL_DEPLOY.md).
+
 `pontaj:remind` rulează la 15 minute și verifică fusul firmei, preferințele și starea zilei înainte de notificare. `pontaj:clean-demo` rulează orar. Verifică `php artisan queue:failed` și logurile. Programările nu funcționează fără cron sau `schedule:work`.
 
 Deduplicarea aplicației previne retrimiterea obișnuită a aceluiași memento/export la retry. Un proces oprit după acceptarea emailului de către SMTP, înainte de salvarea confirmării locale, poate totuși produce o retrimitere; livrarea SMTP nu participă la tranzacția bazei. Testarea cu furnizorul real și monitorizarea rămân necesare.
@@ -103,3 +105,11 @@ Manifestul și iconurile sunt publice. Service workerul păstrează numai pagina
 Instalarea PWA pe dispozitive reale, în special Safari/iOS, trebuie verificată după configurarea HTTPS. Telefonul are nevoie de internet pentru a vedea și salva pontajul.
 
 Licența AGPL-3.0-only este confirmată. Înaintea publicării unui serviciu prin rețea, operatorul trebuie să asigure accesul la sursa corespunzătoare versiunii oferite, conform LICENSE, și să stabilească legătura publică spre sursă. Nu s-a efectuat deploy sau publicare pe GitHub.
+
+### Notificări și email — 25 noiembrie
+
+Notificările interne sunt persistate în `user_notifications`, cu destinatar și firmă, fără texte de pontaj, parole sau tokenuri. Citirea și marcarea sunt limitate la destinatar și apartenențele active. Datele se șterg în cascadă la ștergerea contului/firmei și intră în exportul asistat al datelor persoanei. Ultimele 30 sunt afișate; această limită nu este o politică de ștergere a istoricului. Nu există integrare Firebase/push.
+
+Autentificarea sau înregistrarea fără email confirmat încheie sesiunea și duce la pagina de confirmare. Linkul semnat poate fi deschis fără autentificare și nu creează sesiune; utilizatorul intră cu parola după confirmare. Sesiunile existente ale conturilor neconfirmate sunt închise. Modificarea emailului cere reconfirmare. Verifică separat livrarea reală, dosarul Spam și antetele SPF/DKIM/DMARC.
+
+Folosește `pontaj:delivery:status` pentru raportul fără secrete și `pontaj:queue:work` în cron pe minut. Acesta procesează coada independent de scheduler; `schedule:run` nu înlocuiește workerul. Instrucțiunile pentru cPanel fără shell sunt în CPANEL_DEPLOY.md.

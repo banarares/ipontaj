@@ -1,8 +1,8 @@
-# Raport de verificare — 24 noiembrie 2026
+# Raport de verificare — 25 noiembrie 2026
 
 ## Verificat local
 
-- **157 teste PHP, 1176 aserțiuni: trecute**, atât pe SQLite, cât și pe un MySQL 8.0.46 temporar izolat. Ultima matrice GitHub a verificat commitul publicat anterior. Modificările locale curente nu au fost trimise în CI.
+- **177 teste PHP, 1366 aserțiuni: trecute**, atât pe SQLite, cât și pe un MySQL 8.0.46 temporar izolat. Ultima matrice GitHub a verificat commitul publicat anterior. Modificările locale curente nu au fost trimise în CI.
 - PHPStan/Larastan, nivel 7: fără erori.
 - Verificare TypeScript Vue: trecută.
 - Testele frontend ale estimatorului de parolă: trecute.
@@ -17,7 +17,7 @@
 - CIF/ANAF: teste pentru normalizare, autentificare, refuzul CNP-urilor și intrărilor nevalide, data în fusul București, cache, limitare globală și lock, timeout, răspunsuri incomplete sau pentru alt CIF, firmă negăsită, creare manuală, verificare exclusiv din cache-ul serverului, editări, firme existente, demo și exporturi.
 - Browser, CIF pe desktop și mobil: completare denumire, sursă și dată, anularea confirmării după editare, ignorarea răspunsurilor întârziate, erori recuperabile, creare manuală și persistență în setări. Răspunsurile ANAF din acest test și capturile `company-lookup-*` sunt simulate cu firme fictive; testele PHP verifică separat salvarea confirmării pe server.
 
-Paginile juridice și operatorul sunt verificate fără autentificare. Testele acoperă acceptarea explicită a versiunii curente, textul și hashul păstrate pe server, dovezi private și izolarea lor, acordul clientului profesional, configurarea unui consumator fără CIF, declarația de retragere confirmată, înregistrarea chiar la eșec SMTP, cereri GDPR cu termen calendaristic, rate limiting, registrul și soluționarea asistată, refuzul lansării neconfirmate în producție și arhiva sursei fără date runtime. Confirmarea contractuală Stripe verifică clientul/sesiunea, deduplicarea și atașarea condițiilor exacte. Pentru checkoutul consumatorului se verifică cererea expresă de începere anticipată.
+Paginile juridice și operatorul sunt verificate fără autentificare. Testele acoperă acceptarea explicită a versiunii curente, textul și hashul păstrate pe server, dovezi private și izolarea lor, acordul clientului profesional, configurarea unui consumator fără CIF, declarația de retragere confirmată, înregistrarea chiar la eșec SMTP, cereri GDPR cu termen calendaristic, rate limiting, registrul și soluționarea asistată, blocarea checkoutului neconfirmat în producție și arhiva sursei fără date runtime. Confirmarea contractuală Stripe verifică clientul/sesiunea, deduplicarea și atașarea condițiilor exacte. Pentru checkoutul consumatorului se verifică cererea expresă de începere anticipată.
 
 Browserul a verificat pictograma SAL oficială servită local, paginile pe mobil fără depășire orizontală, retragerea în doi pași și dovada semnată, acceptarea nebifată inițial, înregistrarea și configurarea consumatorului și descărcarea dovezii termenilor. Au fost repetate cu succes și fluxurile de parole, CIF, proprietar–angajat și pontaj/demo. Capturile sunt `legal-desktop.png`, `legal-mobile.png`, `withdrawal-mobile.png`, alături de cele existente.
 
@@ -27,7 +27,7 @@ Capturile reale sunt în `docs/screenshots/`. Testele browser sunt în `tests/br
 
 Testele PHP acoperă izolarea firmelor, rolurile, invitațiile și regenerarea/revocarea lor, limitele și reactivările, o cursă reală între două procese pentru ultimul loc pe SQLite, turele peste miezul nopții, ambele schimbări ale orei, pauzele și suprapunerile, corecturile și auditul, blocarea/redeschiderea lunii, programele istorice, Excelul și formulele malițioase, mementourile duplicate, demo-ul și curățarea lui.
 
-Pentru facturare se verifică local checkoutul și portalul cu un client Stripe simulat, evenimente semnate fictiv, webhookuri duplicate, izolarea abonamentelor și refuzul cheilor live. Pentru contabil se verifică deduplicarea expedierii, linkurile semnate, expirarea și invalidarea lor după redeschiderea/reaprobarea lunii, inclusiv în aceeași secundă.
+Pentru facturare se verifică local checkoutul și portalul cu un client Stripe simulat, modurile test/live, evenimente semnate fictiv, webhookuri duplicate, izolarea abonamentelor și refuzul configurării incomplete sau amestecate. Pentru contabil se verifică deduplicarea expedierii, linkurile semnate, expirarea și invalidarea lor după redeschiderea/reaprobarea lunii, inclusiv în aceeași secundă.
 
 ## ANAF — verificat extern
 
@@ -47,7 +47,7 @@ Clientul Stripe fictiv și firma locală folosite la verificare au fost eliminat
 
 ## Limite și verificări externe rămase
 
-- Plata Stripe live rămâne blocată. Înainte de live sunt necesare configurarea fiscală, testarea interactivă a checkoutului și verificarea endpointului public. Vezi BILLING.md.
+- Codul acceptă acum Stripe test/live, după activarea explicită și verificările tehnice. Nu s-a făcut o plată reală în verificările locale; recepția efectivă a webhookului public și emailurilor trebuie verificată pe găzduire. Procesul RO e-Factura este asumat manual de operator. Vezi BILLING.md.
 - PostgreSQL este configurabil și există o matrice CI SQLite/PostgreSQL/MySQL, însă mediul local nu are extensia `pdo_pgsql` sau un server PostgreSQL. Suita pe MySQL-ul efectiv al resellerului rămâne de executat înainte de producție. Verificarea PostgreSQL din GitHub Actions a trecut. Rezultatele workflowurilor pentru commitul curent se consultă în fila Actions a repositoryului; raportul de față consemnează verificările locale.
 - SMTP real, livrabilitatea și expedierea către un contabil real nu au fost verificate. Local, mailerul scrie în log; testele folosesc notificări simulate.
 - Instalarea PWA pe dispozitive fizice, Safari/iOS și alte browsere rămâne de verificat. Nu există pontaj offline.
@@ -97,3 +97,27 @@ Opt teste noi verifică asumarea explicită pentru colegii fără email, absenț
 Browserul a verificat formularul fără email pe mobil, salvarea și reîncărcarea pontajului, extinderea explicită a datei de început și footerul discret cu date legale extensibile, fără erori JavaScript. Între tabelul istoricului și buton sunt 22 px. Fluxul demo, corectura, exportul și navigarea mobilă au fost repetate cu succes. Capturile sunt `history-spacing-desktop.png`, `past-day-confirmation.png`, `managed-member-mobile.png` și `authenticated-footer-*`.
 
 Migrarea locală a fost aplicată după un backup SQLite consistent privat. La instalarea pe găzduire trebuie aplicate migrările din release; nu se copiază baza fictivă a testelor.
+
+## Configurația juridică și cPanel PHP 8.3
+
+Exemplele cron folosesc executabilul confirmat `/usr/local/bin/ea-php83`. Ghidul LEGAL_ENV distinge datele factuale de confirmările operatorului. Factura confirmă Cyber_Folks SRL, CIF RO33424916; cele 13 copii JetBackup nu dovedesc o durată de 13 zile. ANAF v9 a returnat CAEN principal 6210 pentru CIF 33388821, fără verificarea tuturor activităților autorizate sau a încadrării SaaS. Cheile Stripe live și resursele Billing nu confirmă transmiterea RO e-Factura. Nu au fost declarate finalizate aceste demersuri.
+
+Titularul a aprobat 30 de zile pentru logurile aplicației. Comanda nouă previzualizează implicit; aplicarea cere logger zilnic și durată pozitivă, limitează ștergerea la fișierele zilnice locale expirate și păstrează ziua-limită, alte fișiere, symlinkuri și logul single anterior. Schedulerul o execută la 03:20 UTC dacă politica este configurată. Patru teste acoperă previzualizarea, limitele de vârstă, refuzul configurației incomplete, izolarea căilor și execuția repetată fără bază de date. Confirmarea planului general de retenție rămâne separată.
+
+În producție, înregistrarea gratuită și configurarea firmei nu mai primesc 503 exclusiv din cauza checklistului comercial. Un test verifică întregul flux fără a modifica declarațiile neconfirmate; checkoutul cu facturare activată păstrează blocarea, iar restricția cheilor Stripe live rămâne. Suita completă a trecut pe SQLite și MySQL temporar, câte 162 teste și 1213 aserțiuni; Pint, PHPStan nivel 7, lint și formatare au trecut. Nu s-a repetat verificarea browserului pentru aceste modificări backend/documentație. Nu s-au făcut commit, push, deploy, încasări sau trimiteri de emailuri reale.
+
+## Confirmare email, notificări, iPhone și Stripe live — 25 noiembrie
+
+Înregistrarea nu mai lasă o sesiune autentificată înainte de confirmarea emailului. Middlewareul acoperă și sesiunile existente, autentificarea, 2FA/passkeys și schimbarea emailului. Linkul semnat poate fi deschis fără autentificare, inclusiv pe alt browser; verifică semnătura, termenul și hashul adresei curente, fără a autentifica utilizatorul. Verificarea și schimbarea adresei sunt serializate la scriere. Retrimiterea folosește doar contul dovedit de sesiunea limitată și este throttled. Destinația invitației se păstrează prin înregistrare, verificare și autentificare.
+
+Confirmarea, recuperarea parolei și toate mesajele de notificare folosesc logo-ul iPontaj, antetul comun și footer în română. Contactul este randat în aceeași prezentare și caracterele speciale din conținut sunt afișate ca text. Testul cu coadă database reală a procesat confirmarea, contactul și invitația prin transport array, cu zero joburi rămase/eșuate. Nu s-au trimis emailuri reale. Comanda de diagnostic raportează numai configurarea și contoarele, fără parole sau payloaduri; workerul cron are lock și heartbeat.
+
+Notificările interne persistă separat de audit, sunt izolate pe destinatar/apartenențe active și se anulează cu tranzacția dacă operația eșuează. Marcarea este idempotentă; deschiderea verifică destinatarul și selectează firma corectă. Clopoțelul afișează necititele și ultimele 30, cu actualizare periodică și după navigare. Nu există integrare Firebase sau push. Migrarea locală a fost aplicată după backup SQLite consistent privat; baza live nu a fost accesată.
+
+Chromium desktop și WebKit 27.2 cu profil iPhone 13 au verificat înregistrarea cu confirmare, notificările, marcarea tuturor ca citite, încadrarea câmpurilor native de dată/oră și salvarea pontajului, fără erori JavaScript. Capturile sunt private în `.runtime/day-editor-*` și `.runtime/notifications-*`. WebKit folosește biblioteci extrase în directorul privat, fără instalare de sistem. Testul nu înlocuiește verificarea pe un iPhone fizic, în modul standalone. Fluxurile browser pentru colegi fără email, pontaj istoric și proprietar–invitație–angajat cu confirmarea ambelor adrese au trecut; spațierea istoricului este 22 px.
+
+Plata nu mai este limitată la test. În producție, un client Stripe simulat a verificat checkoutul live, fără a modifica declarațiile operatorului și fără activare locală înainte de webhook. Prețul greșit este refuzat înaintea creării clientului/contractului. Cheile amestecate, webhookul lipsă, semnătura falsă și evenimentele din modul greșit sunt respinse. Dovada contractuală păstrează modul real. Titularul a confirmat dreptul de a vinde și a asumat transmiterea manuală RO e-Factura; aplicația nu o transmite automat. Checklistul rămâne raport separat de blocajele tehnice. Nu s-au creat clienți, abonamente sau încasări reale în această verificare.
+
+Documentele active sunt `2026-11-25.1`; versiunile precedente rămân intacte. Scannerul permite numai override-uri Blade legitime în `resources/views/vendor`, continuă să verifice conținutul lor și refuză arborii de dependențe. Opt teste Python cu date sintetice au trecut. Actualizarea este pregătită pentru încărcare manuală pe cPanel; nu s-au făcut commit, push sau deploy.
+
+Verificarea finală a trecut pe SQLite și MySQL 8.0.46 temporar: **177 teste, 1366 aserțiuni** pe fiecare. PHPStan nivel 7, Pint, TypeScript, lint/formatare frontend și buildul au trecut. Avertismentul existent privind dimensiunea dicționarelor parolei rămâne; acestea sunt încărcate separat.

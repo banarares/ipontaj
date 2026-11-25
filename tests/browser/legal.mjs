@@ -1,3 +1,4 @@
+import { confirmEmail } from './support/verification.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 const browser = await chromium.launch({
@@ -208,9 +209,13 @@ try {
     const consent = page.getByRole('checkbox', { name: /Accept Termenii/ });
     assert.equal(await consent.isChecked(), false);
     await consent.check();
+    const verificationEmail = await page
+        .getByLabel('Adresa de email')
+        .inputValue();
     await page
         .getByRole('button', { name: 'Creează contul gratuit', exact: true })
         .click();
+    await confirmEmail(page, verificationEmail);
     await page.waitForURL('**/onboarding');
     await page
         .getByLabel('Folosesc iPontaj', { exact: true })

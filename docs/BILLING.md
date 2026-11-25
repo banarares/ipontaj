@@ -1,6 +1,6 @@
 # Stripe pentru iPontaj
 
-Planul Echipă: până la 15 persoane, **49 lei/lună, preț final; operator neînregistrat în scopuri de TVA**. În workspace este configurat modul **test**; încasările live sunt blocate în cod.
+Planul Echipă: până la 15 persoane, **49 lei/lună, preț final; operator neînregistrat în scopuri de TVA**. Sunt acceptate modurile Stripe **test** și **live**, determinate de chei. Operatorul activează plata prin `BILLING_ENABLED=true`; testarea automată nu folosește chei reale.
 
 ## Configurarea realizată
 
@@ -67,7 +67,13 @@ SELF_HOSTED_SEAT_LIMIT=15
 
 ## Înaintea încasărilor live
 
-Checkoutul refuză cheile `sk_live_`. Activarea live necesită o schimbare revizuită, după stabilirea entității vânzătoare, datelor și statutului fiscal, taxelor pentru prețul final de 49 lei, procesului de facturare în România, regulilor comerciale și contului de încasare.
+Pentru live folosește `pk_live_` și `sk_live_` din același cont, prețul și configurația de portal din acel mod, secretul endpointului public și `CASHIER_CURRENCY=ron`. Nu transfera clienți/abonamente fictive din baza de test pe live. În producție, `APP_URL` trebuie să fie HTTPS. După editarea `.env`, refă `config:cache`.
+
+Butonul este disponibil numai cu facturarea activată, perechea de chei din același mod, un preț și secretul webhookului configurate. Înainte de crearea clientului/checkoutului se verifică prin API, cu cache de 5 minute, că prețul este activ, din același mod, 4900 bani RON, recurent lunar cu interval 1. Un preț diferit sau API indisponibil oprește inițierea. Contractul păstrează modul real; redirecționarea de succes nu activează singură abonamentul.
+
+Webhookurile trebuie semnate corect și să aibă `livemode` potrivit cheii configurate. Evenimentele sunt deduplicate înaintea modificării abonamentelor și creării notificărilor. Confirmările contractuale sunt trimise prin coadă, cu condițiile exacte atașate; trebuie pornit workerul descris în CPANEL_DEPLOY.md. Portalul folosește `STRIPE_PORTAL_CONFIGURATION` când aceasta este configurată.
+
+La 25 noiembrie 2026, titularul a confirmat dreptul PFA-ului de a oferi serviciul și a asumat transmiterea manuală RO e-Factura din datele Stripe. Aplicația nu transmite RO e-Factura. Confirmările contractuale, fiscale și operaționale rămân responsabilitatea operatorului și sunt raportate separat prin `pontaj:legal:check`; acel checklist nu este o verificare automată a contractelor și nu dezactivează checkoutul.
 
 Configurează HTTPS, webhookul public și evenimentele cerute de versiunea Cashier instalată. [Cashier documentează înregistrarea webhookurilor și verificarea semnăturii](https://laravel.com/docs/13.x/billing#handling-stripe-webhooks). Verifică endpointul public, anularea, plata nereușită, limitele și emailul către contabil înainte de lansare. Nu presupune că setarea TVA inclus stabilește automat regimul fiscal; acesta se validează cu contabilul operatorului.
 

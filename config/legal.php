@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => '2026-11-24.3',
-    'date' => '24 noiembrie 2026',
+    'version' => '2026-11-25.1',
+    'date' => '25 noiembrie 2026',
     'publication_approved' => env('LEGAL_PUBLICATION_APPROVED', false),
     'operator' => [
         'name' => 'BANA RARES-NICOLAE PERSOANA FIZICA AUTORIZATA',

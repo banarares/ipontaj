@@ -313,8 +313,8 @@ class PontajTest extends TestCase
 
     public function test_duplicate_signed_stripe_webhooks_are_processed_once_and_unsigned_rejected(): void
     {
-        config(['cashier.webhook.secret' => 'whsec_test']);
-        $body = json_encode(['id' => 'evt_test_duplicate', 'type' => 'customer.updated', 'data' => ['object' => ['id' => 'cus_unknown', 'email' => 'a@example.test']]]);
+        config(['cashier.webhook.secret' => 'whsec_test', 'cashier.secret' => 'sk_test_fixture']);
+        $body = json_encode(['id' => 'evt_test_duplicate', 'livemode' => false, 'type' => 'customer.updated', 'data' => ['object' => ['id' => 'cus_unknown', 'email' => 'a@example.test']]]);
         $timestamp = time();
         $signature = hash_hmac('sha256', $timestamp.'.'.$body, 'whsec_test');
         for ($i = 0; $i < 2; $i++) {

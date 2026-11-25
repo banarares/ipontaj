@@ -1,3 +1,4 @@
+import { confirmEmail } from './support/verification.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 const browser = await chromium.launch({
@@ -61,6 +62,7 @@ try {
         fullPage: true,
     });
     await register.click();
+    await confirmEmail(first, email, password);
     await first.waitForURL('**/onboarding');
     const second = await browser.newPage({
         viewport: { width: 1440, height: 1000 },
