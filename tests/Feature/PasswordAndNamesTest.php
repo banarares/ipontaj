@@ -42,7 +42,7 @@ class PasswordAndNamesTest extends TestCase
     public function test_strong_password_and_separate_compound_names_are_accepted_without_external_requests(): void
     {
         Http::preventStrayRequests();
-        $this->post('/register', ['terms_accepted' => true, 'legal_version' => config('legal.version'), 'first_name' => 'Ana Maria', 'last_name' => 'Ștefănescu-Popescu', 'email' => 'ana@example.test', 'password' => 'Molid!Vapor7Nori$42', 'password_confirmation' => 'Molid!Vapor7Nori$42'])->assertSessionHasNoErrors()->assertRedirect('/dashboard');
+        $this->post('/register', ['terms_accepted' => true, 'legal_version' => config('legal.version'), 'first_name' => 'Ana Maria', 'last_name' => 'Ștefănescu-Popescu', 'email' => 'ana@example.test', 'password' => 'Molid!Vapor7Nori$42', 'password_confirmation' => 'Molid!Vapor7Nori$42'])->assertSessionHasNoErrors()->assertRedirect('/email/verify');
         $user = User::first();
         $this->assertSame('Ana Maria', $user->first_name);
         $this->assertSame('Ștefănescu-Popescu', $user->last_name);

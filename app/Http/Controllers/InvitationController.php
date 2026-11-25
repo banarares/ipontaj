@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\Invitation;
 use App\Notifications\TeamInvitation;
+use App\Services\ActivityFeed;
 use App\Services\CompanyContext;
 use App\Services\TeamService;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +42,8 @@ class InvitationController extends Controller
             Notification::route('mail', $invitation->email)->notify(new TeamInvitation($invitation->id, $url));
         }
 
+        app(ActivityFeed::class)->record($company, $request->user()->id, 'Invitația a fost creată', '/team');
+
         return back()->with('invitation_url', $url)->with('success', 'Invitația este pregătită. Linkul expiră în 7 zile.');
     }
 
@@ -54,6 +57,8 @@ class InvitationController extends Controller
             abort_if($invitation->accepted_at !== null, 422);
             $invitation->update(['revoked_at' => now()]);
         }, 3);
+
+        app(ActivityFeed::class)->record($company, $request->user()->id, 'Invitația a fost revocată', '/team');
 
         return back()->with('success', 'Invitația a fost revocată.');
     }

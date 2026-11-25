@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Services\LegalAgreements;
-use App\Services\LegalReadiness;
 use App\Services\SeoMetadata;
 use Closure;
 use Illuminate\Http\Request;
@@ -16,9 +15,8 @@ class LegalSafety
     {
         if (app()->isProduction()) {
             Vite::useCspNonce();
-            if ($request->isMethod('post') && $request->is('register', 'companies', 'billing/checkout')) {
-                abort_if(app(LegalReadiness::class)->blockers() !== [], 503, 'Serviciul nu este disponibil momentan. Pentru asistență: office@ipontaj.ro.');
-            }
+            // Operator confirmations are reported by pontaj:legal:check.
+            // Runtime checkout checks configuration, verification, terms and price.
             $user = $request->user();
             if ($user && ! $user->is_demo && $request->is('dashboard', 'today', 'history', 'team', 'month', 'settings', 'billing', 'entries*', 'invitations*', 'schedules', 'members/*', 'months/*', 'company/*')) {
                 $agreements = app(LegalAgreements::class);

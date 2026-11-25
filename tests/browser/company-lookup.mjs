@@ -1,3 +1,4 @@
+import { confirmEmail } from './support/verification.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 
@@ -30,9 +31,13 @@ try {
     await page
         .getByLabel('Confirmă parola', { exact: true })
         .fill('Molid!Vapor7Nori$42');
+    const verificationEmail = await page
+        .getByLabel('Adresa de email')
+        .inputValue();
     await page
         .getByRole('button', { name: 'Creează contul gratuit', exact: true })
         .click();
+    await confirmEmail(page, verificationEmail);
     await page.waitForURL('**/onboarding');
     let delayed;
     let release;

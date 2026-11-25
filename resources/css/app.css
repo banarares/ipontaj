@@ -1082,7 +1082,7 @@ button {
 }
 .two-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
 }
 .two-columns input {
@@ -4356,4 +4356,102 @@ body {
 .contact-form .hint {
     margin-top: 14px;
     line-height: 1.65;
+}
+
+/* Native iOS date/time controls must shrink with their grid tracks. */
+.interval-editor,
+.interval-editor .two-columns,
+.interval-editor label {
+    min-width: 0;
+    max-width: 100%;
+}
+.interval-editor input[type='datetime-local'] {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.interval-editor input[type='datetime-local']::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+}
+@media (max-width: 600px) {
+    .modal .two-columns input[type='datetime-local'] {
+        font-size: 16px;
+    }
+}
+
+.notification-menu {
+    position: relative;
+}
+.notification-menu > summary {
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+}
+.notification-menu > summary::-webkit-details-marker {
+    display: none;
+}
+.notification-count {
+    position: absolute;
+    right: -4px;
+    top: -3px;
+    padding: 2px 5px;
+    border-radius: 12px;
+    background: #18745d;
+    color: white;
+    font-size: 10px;
+    line-height: 1.4;
+}
+.notification-panel {
+    position: absolute;
+    z-index: 40;
+    right: 0;
+    top: calc(100% + 12px);
+    width: min(380px, calc(100vw - 32px));
+    max-height: min(520px, 70dvh);
+    overflow: auto;
+    padding: 18px;
+    border: 1px solid #dce6dd;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 12px 38px #203d2520;
+}
+.notification-panel > .flex-between {
+    align-items: start;
+    margin-bottom: 14px;
+    font-size: 14px;
+}
+.notification-panel .text-button {
+    font-size: 12px;
+}
+.notification-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.notification-panel li + li {
+    border-top: 1px solid #edf1eb;
+}
+.notification-panel li button {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px 8px;
+    text-align: left;
+    border-radius: 6px;
+    font-size: 13px;
+}
+.notification-panel li button.unread {
+    background: #eff6f0;
+}
+.notification-panel li span,
+.notification-panel time {
+    color: #748477;
+    font-size: 11px;
 }

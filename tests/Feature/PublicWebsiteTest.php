@@ -49,7 +49,7 @@ class PublicWebsiteTest extends TestCase
         $this->assertStringNotContainsString('mesaj fictiv', $raw);
         Notification::assertSentOnDemand(ContactMessageReceived::class, fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === config('legal.operator.email'));
         $mail = (new ContactMessageReceived($message->id))->toMail(new \stdClass);
-        $this->assertSame('mail.contact', $mail->view);
+        $this->assertSame('mail.contact', $mail->markdown);
         $this->assertSame($message->id, $mail->viewData['reference']);
         $this->artisan('pontaj:contact', ['--resolve' => $message->id])->assertSuccessful();
         $this->assertSame('resolved', $message->refresh()->status);

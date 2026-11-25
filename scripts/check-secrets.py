@@ -30,7 +30,12 @@ def forbidden(path):
         return True
     if p.name.startswith('.env') and p.name != '.env.example':
         return True
-    if any(x in parts for x in ['.runtime', '.local-tools', 'backup', '.aws', '.codex', '.agents', 'vendor', 'node_modules', '.git']):
+    # Laravel's Blade overrides live in resources/views/vendor; these are app source,
+    # while installed dependency trees remain private. Content checks still apply.
+    view_override = parts[:3] == ('resources', 'views', 'vendor') and path.endswith('.blade.php')
+    if 'vendor' in parts and not view_override:
+        return True
+    if any(x in parts for x in ['.runtime', '.local-tools', 'backup', '.aws', '.codex', '.agents', 'node_modules', '.git']):
         return True
     if p.name in ['auth.json', 'public/hot', 'config.php.bak']:
         return True

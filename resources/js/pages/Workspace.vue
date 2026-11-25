@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import Brand from '@/components/Brand.vue';
+import NotificationBell from '@/components/NotificationBell.vue';
 import Icon from '@/components/UiIcon.vue';
 import DayEditor from '@/components/DayEditor.vue';
 import CompanyIdentityFields from '@/components/CompanyIdentityFields.vue';
@@ -516,18 +517,7 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                     <span v-if="company.is_demo" class="demo-badge"
                         >Mediu demonstrativ</span
                     ><span class="timezone-label">{{ company.timezone }}</span
-                    ><button
-                        class="icon-button"
-                        aria-label="Vezi elementele care necesită atenție"
-                        @click="
-                            owner ? router.get('/month') : router.get('/today')
-                        "
-                    >
-                        <Icon name="bell" :size="20" /><span
-                            v-if="missingDays + pendingDays"
-                            class="notification-dot"
-                        ></span>
-                    </button>
+                    ><NotificationBell />
                 </div>
             </header>
             <div v-if="!online" class="offline-banner" role="alert">

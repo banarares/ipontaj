@@ -34,7 +34,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'Molid!Vapor7Nori$42',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertGuest();
+        $response->assertRedirect(route('verification.notice'));
     }
 }

@@ -88,6 +88,7 @@ class TeamService
             }
             $member = Membership::firstOrCreate(['company_id' => $company->id, 'user_id' => $user->id], ['joined_on' => now($company->timezone)->toDateString()]);
             $invite->update(['accepted_at' => now()]);
+            app(ActivityFeed::class)->record($company, $user->id, 'Invitația a fost acceptată', '/today', true);
 
             return $member;
         }, 3);

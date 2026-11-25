@@ -5,11 +5,13 @@ use App\Http\Controllers\CompanyLookupController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DataController;
 use App\Http\Controllers\DemoController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LegalRequestController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\WorkspaceController;
 use App\Models\AuditEvent;
 use App\Models\Company;
@@ -19,6 +21,10 @@ use App\Services\LegalDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1,email-verify'])->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:6,1,email-resend')->name('verification.send');
 
 Route::inertia('/', 'Welcome')->name('home');
 Route::get('/robots.txt', [SeoController::class, 'robots']);
@@ -54,6 +60,10 @@ Route::post('/demo', [DemoController::class, 'start'])->middleware('throttle:5,6
 Route::get('/invite/{token}', [InvitationController::class, 'show'])->middleware('throttle:30,1,invite-view')->name('invitation.show');
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('cashier.webhook');
 Route::middleware(['auth', 'throttle:120,1,workspace'])->group(function () {
+    Route::get('/notifications', [UserNotificationController::class, 'index']);
+    Route::post('/notifications/{notification}/open', [UserNotificationController::class, 'open']);
+    Route::patch('/notifications/{notification}/read', [UserNotificationController::class, 'read']);
+    Route::post('/notifications/read-all', [UserNotificationController::class, 'readAll']);
     Route::get('/dashboard', [WorkspaceController::class, 'index'])->name('dashboard');
     foreach (['today', 'history', 'team', 'month', 'settings', 'billing'] as $section) {
         Route::get('/'.$section, fn (Request $request) => app(WorkspaceController::class)->index($request, $section))->name('workspace.'.$section);

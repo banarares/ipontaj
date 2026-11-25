@@ -4,6 +4,7 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -34,7 +35,7 @@ class ProfileUpdateTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('verification.notice'));
 
         $user->refresh();
 
@@ -57,6 +58,7 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertSame('test@example.com', $user->refresh()->email);
 
+        $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/login');
         $this->post(route('logout'));
 
         $this->post(route('login.store'), [
