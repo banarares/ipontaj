@@ -45,6 +45,9 @@ class SeoMetadata
         if (config('seo.google_verification')) {
             $head[] = $meta('seo-google-verification', 'google-site-verification', config('seo.google_verification'));
         }
+        if ($request->routeIs('home', 'legal.contact')) {
+            $head[] = '<link data-inertia="seo-llms" rel="describedby" type="text/plain" href="'.$escape($this->baseUrl().'/llms.txt').'">';
+        }
         if ($home) {
             $base = $this->baseUrl();
             $operator = ['@type' => 'Organization', '@id' => $base.'/#operator', 'name' => 'iPontaj', 'legalName' => config('legal.operator.name'), 'url' => $base.'/', 'logo' => $base.'/icons/icon-512.png', 'email' => config('legal.operator.email'), 'telephone' => '+4'.config('legal.operator.phone'), 'taxID' => config('legal.operator.cif')];

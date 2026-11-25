@@ -7,6 +7,7 @@
 - [Operare, cozi, backup și ștergere asistată](OPERATIONS.md)
 - [Stripe în modul de test și pregătirea facturării](BILLING.md)
 - [Export și transferul datelor](API_EXPORT.md)
+- [Pontaj, pauze și concedii în România — acoperire și lipsuri](RO_ATTENDANCE_REVIEW.md)
 - [Demersuri juridice pentru lansare](LEGAL_LAUNCH.md)
 - [Configurarea LEGAL_* și dovezile necesare](LEGAL_ENV.md)
 - [Solicitare pregătită pentru furnizorul reseller](CYBERFOLKS_REQUEST.md)

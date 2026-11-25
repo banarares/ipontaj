@@ -82,6 +82,40 @@ Pagina principală are titlu, descriere, canonical fără parametri de campanie,
 
 `/sitemap.xml` include doar pagina principală și contactul. Conturile, formularele de autentificare, pontajele și descărcările private au antet `X-Robots-Tag: noindex, nofollow`. `robots.txt` este generat de Laravel; nu pune un fișier static în `public/robots.txt` care să ascundă ruta.
 
+### Dacă robots blochează tot și sitemap-ul este gol
+
+Acesta este comportamentul configurat pentru `SEO_INDEXABLE=false`, inclusiv în producție. Adăugarea proprietății în Search Console nu modifică `.env` sau configurația Laravel. Pe instalarea live setează cele trei valori din exemplul de mai sus, fără a înlocui cheile ori restul fișierului `.env`. `SEO_CANONICAL_URL` trebuie să fie URL-ul simplu, fără sintaxa de link Markdown, paranteze sau ghilimele suplimentare.
+
+Pe cPanel, fără shell, adaugă temporar următorul cron și elimină-l după rularea reușită:
+
+```bash
+/usr/local/bin/ea-php83 /home/UTILIZATOR/public_html/artisan config:cache --no-ansi > /home/UTILIZATOR/ipontaj-config-cache.log 2>&1
+```
+
+După încărcarea codului pentru noile rute `llms.txt`/`llm.txt`, curăță și eventualul cache de rute printr-un cron temporar separat:
+
+```bash
+/usr/local/bin/ea-php83 /home/UTILIZATOR/public_html/artisan route:clear --no-ansi > /home/UTILIZATOR/ipontaj-route-clear.log 2>&1
+```
+
+Nu este necesar `cache:clear` sau ștergerea întregului cache al aplicației pentru această actualizare.
+
+Pentru diagnostic ulterior, comanda următoare nu modifică setări, nu accesează baza și nu face cereri de rețea:
+
+```bash
+/usr/local/bin/ea-php83 /home/UTILIZATOR/public_html/artisan pontaj:seo:status --no-ansi > /home/UTILIZATOR/ipontaj-seo-status.log 2>&1
+```
+
+Raportul trebuie să arate `indexing_enabled: true`, canonical `https://ipontaj.ro`, două URL-uri în `sitemap_urls` și lista `public_files_shadowing_routes` goală. Nu afișează chei sau valoarea tokenului Google. Dacă apar fișiere statice cu aceleași nume în document root, păstrează o copie privată și elimină numai acele fișiere vechi care ocolesc rutele Laravel. Nu crea un `robots.txt` static cu `Allow: /` drept înlocuitor pentru activarea configurației: pagina ar putea rămâne `noindex`.
+
+Verifică public, fără autentificare: `/robots.txt` trebuie să conțină `Allow: /` și URL-ul sitemapului, `/sitemap.xml` cele două pagini, iar pagina principală să aibă meta robots `index, follow, max-image-preview:large` și să nu trimită `X-Robots-Tag: noindex`. Dacă un CDN livrează încă răspunsul anterior, golește cache-ul numai pentru URL-urile afectate și verifică regulile de cache; răspunsurile Laravel sunt `no-store, private`. După confirmarea răspunsurilor actuale, retrimite sitemap-ul și folosește URL Inspection în Search Console. Google poate păstra temporar informațiile din accesările anterioare.
+
+### Informații pentru asistenți AI
+
+`/llms.txt` oferă un rezumat Markdown al serviciului, limitele funcționale și linkuri către pagini/documente publice și codul sursă. `/llm.txt` redirecționează permanent către numele plural. Pagina principală și contactul îl indică prin `rel="describedby"`. Conținutul se generează din `resources/seo/llms.md` cu domeniul canonical și emailul public al operatorului; nu include contul autentificat, firme sau linkuri individuale semnate. Un fișier static cu același nume ar ocoli această generare.
+
+Este disponibil și cu indexarea oprită, ca orice informație publică accesată direct; `robots.txt` rămâne blocant pe staging. Fișierul folosește [propunerea llms.txt](https://llmstxt.org/), nu este un mecanism de autorizare și nu garantează preluarea de către un furnizor AI. Google arată că [nu sunt necesare fișiere AI speciale pentru AI Overviews sau AI Mode](https://developers.google.com/search/docs/appearance/ai-features). Activarea indexării, accesul crawlerelor și conținutul public rămân verificări separate.
+
 1. Adaugă domeniul în [Google Search Console](https://search.google.com/search-console/).
 2. Pentru proprietatea de domeniu, confirmă proprietatea prin înregistrarea TXT indicată de Google, adăugată în DNS Cloudflare. Pentru o proprietate URL-prefix poți folosi metoda meta-tag, completând numai valoarea în `GOOGLE_SITE_VERIFICATION`.
 3. După verificare, trimite `https://ipontaj.ro/sitemap.xml`.

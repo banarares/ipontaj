@@ -8,6 +8,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Demo data is created per browser session by DemoController. No shared account or default password.
+        // DemoWorkspaces creates bounded, expiring sessions; no shared account or default password.
     }
 }

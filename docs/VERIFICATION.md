@@ -2,7 +2,7 @@
 
 ## Verificat local
 
-- **177 teste PHP, 1366 aserțiuni: trecute**, atât pe SQLite, cât și pe un MySQL 8.0.46 temporar izolat. Ultima matrice GitHub a verificat commitul publicat anterior. Modificările locale curente nu au fost trimise în CI.
+- **181 teste PHP, 1398 aserțiuni: trecute**, atât pe SQLite, cât și pe un MySQL 8.0.46 temporar izolat. Ultima matrice GitHub a verificat commitul publicat anterior. Modificările locale curente nu au fost trimise în CI.
 - PHPStan/Larastan, nivel 7: fără erori.
 - Verificare TypeScript Vue: trecută.
 - Testele frontend ale estimatorului de parolă: trecute.
@@ -121,3 +121,49 @@ Plata nu mai este limitată la test. În producție, un client Stripe simulat a 
 Documentele active sunt `2026-11-25.1`; versiunile precedente rămân intacte. Scannerul permite numai override-uri Blade legitime în `resources/views/vendor`, continuă să verifice conținutul lor și refuză arborii de dependențe. Opt teste Python cu date sintetice au trecut. Actualizarea este pregătită pentru încărcare manuală pe cPanel; nu s-au făcut commit, push sau deploy.
 
 Verificarea finală a trecut pe SQLite și MySQL 8.0.46 temporar: **177 teste, 1366 aserțiuni** pe fiecare. PHPStan nivel 7, Pint, TypeScript, lint/formatare frontend și buildul au trecut. Avertismentul existent privind dimensiunea dicționarelor parolei rămâne; acestea sunt încărcate separat.
+
+## Compatibilitate reseller și diagnostic — 25 noiembrie, actualizare
+
+Logurile de pe găzduire au identificat trei cauze independente: lipsa migrării `user_notifications`, nepotrivirea hostname-ului în certificatul SMTP și `proc_open` dezactivat pentru evenimentele shell ale schedulerului. Schedulerul a fost trecut la callbackuri numite care apelează Artisan în același proces și păstrează prevenirea suprapunerilor. Codurile de ieșire nenule sunt raportate drept erori, fără a afișa conținutul comenzilor.
+
+Un test rulează PHP separat cu `proc_open`, `exec`, `popen`, `passthru`, `shell_exec` și `system` dezactivate și execută schedulerul la orele programate, pe SQLite izolat și loguri fictive. Au trecut mementourile, curățarea demo și expirarea logurilor; nu au fost accesate date live și nu s-au trimis emailuri. Alt test aplică migrarea notificărilor unei baze cu utilizator, firmă și pontaj existente și verifică păstrarea lor, inclusiv la o a doua rulare.
+
+Două exporturi SQL locale vechi, inclusiv cel de schemă goală, conțin fiecare 26 de instrucțiuni `DROP TABLE`; ele nu sunt pachete de actualizare pentru baza live. Configurarea SMTP se corectează prin hostname-ul certificat/recomandat de cPanel, cu verificarea TLS păstrată. Nu s-a efectuat autentificare SMTP sau expediere reală în diagnosticare.
+
+Verificarea după corecția pentru hosting: 179 teste / 1380 aserțiuni pe fiecare dintre SQLite și MySQL 8.0.46 temporar; PHPStan fără erori.
+
+## Checkout cu identificator fiscal și client fără adresă — 25 noiembrie
+
+Logul de producție a identificat refuzul Stripe pentru colectarea identificatorului fiscal la un client fără adresă salvată. Cererea de checkout include acum `customer_update[address]=auto`; adresa este introdusă de cumpărător în pagina Stripe. Clientul de test reproduce refuzul API dacă parametrul lipsește: regresia a returnat 500 înainte de corecție și redirecționează extern după corecție. Cele 9 cazuri de facturare au trecut, inclusiv clienți existenți în modurile test/live, păstrarea numelui automat cerut de Stripe și lipsa activării abonamentului înaintea webhookului. Nu s-au schimbat chei, datele bazei sau prețul și nu s-au creat sesiuni ori încasări reale.
+
+Verificarea finală pentru această corecție: **181 teste / 1398 aserțiuni** pe SQLite și MySQL temporar, PHPStan fără erori, Pint și lint/formatare trecute.
+
+## Excel pentru contabil și acoperirea tipurilor de timp — 25 noiembrie
+
+Exportul are acum trei foi, cu „Pentru contabil” deschisă implicit. Orele zilnice și totalurile sunt numerice, calculate din minute exacte; se disting orele înregistrate, confirmate/aprobate și cele de verificat. Totalurile de CO/CM/CFP/alte absențe includ numai înregistrări aprobate. Zilele lipsă, înregistrările neconfirmate și statutul lunii sunt vizibile separat. În detalii, minutele nete ale zilei apar o singură dată, iar fiecare interval are minute cu semn, evitând dublarea netului la însumare.
+
+Șapte teste noi verifică absențele neaprobate, aprobarea fără confirmare, redeschiderea lunii, protecția față de formule, februarie bisect fără colegi, ora de iarnă, totalurile fără rotunjirea intermediară și turele între luni. Exemplul XLSX este generat opțional numai din fixture-uri fictive. Previzualizarea HTML a fost inspectată local; nu s-a testat deschiderea într-o aplicație Excel desktop.
+
+Suita completă a trecut pe SQLite și MySQL 8.0.46 temporar: **188 teste / 1759 aserțiuni** pe fiecare. După ajustarea lățimilor din foaia detaliată, au trecut din nou cele 43 de teste relevante / 586 aserțiuni, PHPStan și Pint. Lintul și formatarea au trecut. Nu s-au schimbat schema sau datele bazei live și nu s-au făcut commit ori push.
+
+[Analiza pentru România](RO_ATTENDANCE_REVIEW.md) compară implementarea cu textele oficiale consultate. Aplicația nu acoperă încă toate concediile și politicile de pauză, nu clasifică automat noaptea/sărbătorile/orele suplimentare și nu împarte turele între zile/luni. Catalogul de absențe rămâne neschimbat; livrarea acestui export nu certifică o acoperire juridică integrală.
+
+## Demo-uri cu expirare și capacitate limitată — 25 noiembrie
+
+Fiecare demo creează acum un utilizator temporar și trei profiluri fără cont, cu mementourile oprite. Sesiunea existentă este reutilizată. Durata implicită este 60 de minute de la creare, iar limita implicită este 20 de firme demo. Crearea și curățarea sunt coordonate prin același lock; două procese concurente au verificat că ultimul loc nu poate fi alocat de două ori.
+
+Ieșirea și logoutul elimină datele demo și sesiunile database asociate. Middlewareul refuză utilizarea după expirare, inclusiv în cereri JSON. Verificarea notificărilor în fundal recunoaște expirarea și redirecționează o singură dată către mesajul public, fără a consuma o notificare flash. Schedulerul curăță la fiecare 10 minute; pornirea unui demo curăță și fără scheduler. `--dry-run` raportează doar numere, fără ștergeri sau date personale.
+
+Testele acoperă demo-urile vechi cu patru utilizatori, orfanii expirați, repetarea curățării, capacitatea și izolarea vizitatorilor. Au fost păstrate explicit conturile/firmele reale și cazurile atipice cu apartenențe reale, CIF, Stripe, abonamente sau acceptări contractuale. Aceste controale nu șterg după simpla asemănare a emailului cu un email demo.
+
+În Chromium, două contexte separate desktop/mobil au verificat un singur utilizator și patru apartenențe, mesajul de capacitate, confirmarea unei zile, exportul XLSX și eliminarea tuturor rândurilor demo la ieșire. După eliberarea locului, al doilea vizitator a putut porni un demo; expirarea simulată pe baza fictivă a închis accesul și a afișat mesajul, fără erori JavaScript. Capturile private sunt `.runtime/demo-capacity-mobile.png` și `.runtime/demo-expired-mobile.png`.
+
+Suita completă a trecut pe SQLite și MySQL 8.0.46 temporar: **200 teste / 1863 aserțiuni** pe fiecare. PHPStan, Pint, TypeScript, lint/formatare și buildul au trecut. Actualizarea nu necesită migrare. Verificarea nu a accesat baza live și nu a trimis emailuri ori inițiat plăți. Modificările rămân locale, fără commit sau push.
+
+## Indexare Google și llms.txt — 25 noiembrie
+
+Verificarea HTTP publică pe ipontaj.ro a confirmat `Disallow: /`, sitemap fără URL-uri, meta robots și antet `noindex, nofollow` pe pagina principală și 404 pentru `llms.txt`. Canonicalul era deja `https://ipontaj.ro/`. Răspunsurile aveau `no-store, private`. Acest rezultat corespunde configurației efective cu indexarea oprită; adăugarea proprietății în Search Console nu schimbă configurația Laravel. Verificarea a fost doar publică, fără autentificare, acces la baza live sau modificări pe server.
+
+`/llms.txt` generează acum un rezumat public Markdown, cu linkuri bazate pe domeniul canonical; `/llm.txt` redirecționează permanent către el. Pagina principală și contactul au legătura `describedby`. Testele verifică lipsa datelor utilizatorului/firmei în acest răspuns, inclusiv la acces autentificat, adaptarea la alte domenii și păstrarea blocării de indexare pe staging. Comanda `pontaj:seo:status` arată configurația efectivă, existența fișierelor statice care ar ocoli rutele și URL-urile sitemapului, fără citirea bazei, cereri externe sau afișarea tokenului Google.
+
+Cele 12 teste pentru site-ul public au trecut, inclusiv eliminarea antetului `noindex` de pe pagina principală/contact când flagul este activ. Suita SQLite completă: **203 teste / 1895 aserțiuni**. PHPStan, Pint și lint/formatare au trecut. Nu s-a reconstruit frontendul, fiind modificări numai de backend și conținut. Nu s-au făcut commit, push, deploy, modificări în Search Console sau cereri de indexare. Activarea `.env` live și refacerea configurației sunt documentate în [CLOUDFLARE_SEO.md](CLOUDFLARE_SEO.md).

@@ -25,4 +25,14 @@ class SeoController extends Controller
 
         return response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'.$urls.'</urlset>', 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
     }
+
+    public function llms(SeoMetadata $seo): Response
+    {
+        $body = strtr(file_get_contents(resource_path('seo/llms.md')) ?: '', [
+            '{{site_url}}' => $seo->baseUrl(),
+            '{{contact_email}}' => (string) config('legal.operator.email'),
+        ]);
+
+        return response($body, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
 }

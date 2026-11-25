@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\LegalAgreements;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\ClientInterface;
 use Stripe\HttpClient\CurlClient;
@@ -42,6 +43,10 @@ class BillingTest extends TestCase
                 if (str_contains($absUrl, '/prices/')) {
                     $object = array_replace(['id' => 'price_team_49_inclusive', 'object' => 'price', 'active' => true, 'livemode' => $this->live, 'currency' => 'ron', 'unit_amount' => 4900, 'type' => 'recurring', 'recurring' => ['interval' => 'month', 'interval_count' => 1]], $this->priceChanges);
                 } elseif (str_contains($absUrl, 'checkout/sessions')) {
+                    // Model Stripe's validation for a customer with no saved address.
+                    if (isset($params['customer']) && ($params['tax_id_collection']['enabled'] ?? 'false') === 'true' && ($params['customer_update']['address'] ?? null) !== 'auto') {
+                        return [json_encode(['error' => ['type' => 'invalid_request_error', 'message' => 'A customer without a saved address requires customer_update[address]=auto for tax ID collection.', 'param' => 'customer_update[address]']]), 400, []];
+                    }
                     $object = ['id' => 'cs_fixture', 'object' => 'checkout.session', 'url' => 'https://checkout.stripe.com/c/pay/fixture'];
                 } elseif (str_contains($absUrl, 'billing_portal/sessions')) {
                     $object = ['id' => 'bps_fixture', 'object' => 'billing_portal.session', 'url' => 'https://billing.stripe.com/p/session/fixture'];
@@ -72,6 +77,8 @@ class BillingTest extends TestCase
         $this->assertSame('subscription', $sessions[0]['params']['mode']);
         $this->assertSame('price_team_49_inclusive', $sessions[0]['params']['line_items'][0]['price']);
         $this->assertSame('required', $sessions[0]['params']['billing_address_collection']);
+        $this->assertSame('auto', $sessions[0]['params']['customer_update']['address']);
+        $this->assertSame('auto', $sessions[0]['params']['customer_update']['name']);
         $this->assertSame('false', $sessions[0]['params']['automatic_tax']['enabled']);
         $this->assertStringContainsString('neînregistrat', $sessions[0]['params']['custom_text']['submit']['message']);
         $this->assertTrue(LegalAcceptance::where('purpose', 'checkout')->firstOrFail()->facts['test_mode']);
@@ -92,6 +99,26 @@ class BillingTest extends TestCase
         $this->actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post('/billing/checkout', ['terms_accepted' => true, 'legal_version' => config('legal.version')])->assertStatus(409)->assertHeader('X-Inertia-Location', 'https://checkout.stripe.com/c/pay/fixture');
         $this->assertFalse(LegalAcceptance::where('purpose', 'checkout')->firstOrFail()->facts['test_mode']);
         $this->assertFalse(config('legal.publication_approved'));
+        $this->assertFalse($company->fresh()->subscribed('default'));
+    }
+
+    public static function stripeModes(): array
+    {
+        return ['test' => [false], 'live' => [true]];
+    }
+
+    #[DataProvider('stripeModes')]
+    public function test_existing_customer_without_address_opens_checkout_in_both_modes(bool $live): void
+    {
+        [$user, $company] = $this->company($live);
+        $company->update(['stripe_id' => 'cus_fixture']);
+        $client = $this->stripe($live);
+        $this->actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post('/billing/checkout', ['terms_accepted' => true, 'legal_version' => config('legal.version')])->assertStatus(409)->assertHeader('X-Inertia-Location', 'https://checkout.stripe.com/c/pay/fixture');
+        $sessions = array_values(array_filter($client->calls, fn ($call) => str_contains($call['url'], 'checkout/sessions')));
+        $this->assertSame('cus_fixture', $sessions[0]['params']['customer']);
+        $this->assertSame('true', $sessions[0]['params']['tax_id_collection']['enabled']);
+        $this->assertSame('auto', $sessions[0]['params']['customer_update']['address']);
+        $this->assertSame('auto', $sessions[0]['params']['customer_update']['name']);
         $this->assertFalse($company->fresh()->subscribed('default'));
     }
 

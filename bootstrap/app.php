@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ExpireDemo;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LegalSafety;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             HandleAppearance::class,
+            ExpireDemo::class,
             RequireConfirmedEmail::class,
             LegalSafety::class,
             HandleInertiaRequests::class,

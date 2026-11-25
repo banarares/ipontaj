@@ -29,6 +29,8 @@ Route::post('/email/verification-notification', [EmailVerificationController::cl
 Route::inertia('/', 'Welcome')->name('home');
 Route::get('/robots.txt', [SeoController::class, 'robots']);
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap']);
+Route::get('/llms.txt', [SeoController::class, 'llms']);
+Route::redirect('/llm.txt', '/llms.txt', 301);
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,60,contact')->name('contact.store');
 foreach (array_keys(app(LegalDocuments::class)->index()) as $slug) {
     Route::get('/'.$slug, [LegalController::class, 'show'])->defaults('slug', $slug)->name('legal.'.$slug);

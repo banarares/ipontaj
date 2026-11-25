@@ -261,7 +261,7 @@ class PontajTest extends TestCase
         $this->assertSame(480, $s->planned($m, '2026-11-30'));
     }
 
-    public function test_excel_has_two_sheets_and_neutralizes_text_formulas(): void
+    public function test_excel_has_accountant_and_detail_sheets_and_neutralizes_text_formulas(): void
     {
         [$u,$c,$m] = $this->team();
         $u->update(['name' => '=HYPERLINK("https://example.test")']);
@@ -269,11 +269,11 @@ class PontajTest extends TestCase
         $this->assertCount(1, app(AttendanceService::class)->summary($c, '2026-11')['rows']);
         $path = app(ExcelService::class)->build($c, '2026-11');
         $book = IOFactory::load($path);
-        $this->assertSame(['Centralizator', 'Intervale detaliate'], $book->getSheetNames());
+        $this->assertSame(['Pentru contabil', 'Centralizator', 'Intervale detaliate'], $book->getSheetNames());
         $this->assertSame('s', $book->getActiveSheet()->getCell('B6')->getDataType());
         $this->assertSame($u->name, $book->getActiveSheet()->getCell('B6')->getValue());
         $this->assertStringContainsString('PROVIZORIU', $book->getActiveSheet()->getCell('A2')->getValue());
-        $this->assertSame('?', $book->getActiveSheet()->getCell('D6')->getValue());
+        $this->assertSame('?', $book->getSheetByName('Centralizator')->getCell('D6')->getValue());
         unlink($path);
     }
 
