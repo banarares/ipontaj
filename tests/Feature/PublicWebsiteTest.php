@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
 use App\Models\ContactMessage;
 use App\Models\User;
 use App\Notifications\ContactMessageReceived;
@@ -9,6 +10,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -134,7 +136,7 @@ class PublicWebsiteTest extends TestCase
     {
         config(['seo.indexable' => true, 'seo.url' => 'https://ipontaj.ro', 'seo.google_verification' => 'public-verification-fixture']);
         $response = $this->get('/?utm_source=test');
-        $response->assertOk()->assertSee('<h1>Pontajul la zi.', false)->assertSee('application/ld+json', false)->assertSee('https://ipontaj.ro/', false)->assertSee('public-verification-fixture');
+        $response->assertOk()->assertHeaderMissing('X-Robots-Tag')->assertSee('index, follow, max-image-preview:large')->assertSee('<h1>Pontajul la zi.', false)->assertSee('application/ld+json', false)->assertSee('https://ipontaj.ro/', false)->assertSee('public-verification-fixture');
         $response->assertDontSee('aggregateRating')->assertDontSee('utm_source=test" rel="canonical', false);
         preg_match('/<script data-inertia="seo-jsonld"[^>]*>(.*?)<\/script>/s', $response->getContent(), $matches);
         $schema = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
@@ -142,6 +144,7 @@ class PublicWebsiteTest extends TestCase
         $this->assertSame(0, $schema['@graph'][2]['offers']['price']);
         $this->get('/sitemap.xml')->assertOk()->assertSee('<loc>https://ipontaj.ro/</loc>', false)->assertSee('<loc>https://ipontaj.ro/contact</loc>', false)->assertDontSee('/register')->assertDontSee('/dashboard');
         $this->get('/robots.txt')->assertSee('Sitemap: https://ipontaj.ro/sitemap.xml');
+        $this->get('/contact')->assertHeaderMissing('X-Robots-Tag');
         $this->get('/login')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
         $this->get('/login')->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', false));
         $this->actingAs(User::factory()->create())->get('/')->assertHeader('X-Robots-Tag', 'noindex, nofollow')->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', false));
@@ -160,5 +163,47 @@ class PublicWebsiteTest extends TestCase
         $this->assertStringNotContainsString('cloudflareinsights.com', $csp);
         config(['cloudflare.analytics_token' => 'public-analytics-fixture']);
         $this->assertStringContainsString('https://static.cloudflareinsights.com', $this->get('/login')->headers->get('Content-Security-Policy'));
+    }
+
+    public function test_llms_is_public_plain_text_with_canonical_links_and_has_a_singular_alias(): void
+    {
+        config(['seo.url' => 'https://ipontaj.ro', 'seo.indexable' => true]);
+        $this->get('/llms.txt')->assertOk()->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+            ->assertSee('# iPontaj')->assertSee('https://ipontaj.ro/documente/confidentialitate', false)
+            ->assertSee('https://github.com/banarares/ipontaj', false)->assertDontSee('{{site_url}}', false);
+        $this->get('/llm.txt')->assertStatus(301)->assertRedirect('/llms.txt');
+        $this->get('/')->assertSee('rel="describedby" type="text/plain" href="https://ipontaj.ro/llms.txt"', false);
+        $this->get('/contact')->assertSee('rel="describedby" type="text/plain" href="https://ipontaj.ro/llms.txt"', false);
+    }
+
+    public function test_llms_contains_no_authenticated_user_or_company_details_and_supports_other_installations(): void
+    {
+        config(['seo.url' => 'https://pontaj.example.test/', 'seo.indexable' => false]);
+        $guest = $this->get('/llms.txt')->assertOk()->assertSee('https://pontaj.example.test/contact', false)->assertDontSee('https://ipontaj.ro', false)->getContent();
+        $user = User::factory()->create(['first_name' => 'PrivateFirst', 'last_name' => 'PrivateLast', 'email' => 'private@example.test']);
+        $company = Company::create(['name' => 'Private company name']);
+        $company->memberships()->create(['user_id' => $user->id, 'role' => 'owner', 'joined_on' => '2026-11-01']);
+        $authenticated = $this->actingAs($user)->get('/llms.txt')->assertOk()->assertDontSee('PrivateFirst')->assertDontSee('Private company name')->assertDontSee('private@example.test')->getContent();
+        $this->assertSame($guest, $authenticated);
+        $this->get('/robots.txt')->assertSee('Disallow: /');
+        $this->get('/sitemap.xml')->assertDontSee('<loc>', false);
+    }
+
+    public function test_seo_diagnostic_reports_effective_configuration_without_reading_database_or_secrets(): void
+    {
+        config(['seo.indexable' => true, 'seo.url' => 'https://ipontaj.ro', 'seo.google_verification' => 'public-but-omit-value']);
+        $queries = 0;
+        DB::listen(function () use (&$queries): void {
+            $queries++;
+        });
+        $this->assertSame(0, Artisan::call('pontaj:seo:status'));
+        $output = Artisan::output();
+        $report = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertTrue($report['indexing_enabled']);
+        $this->assertSame(['https://ipontaj.ro/', 'https://ipontaj.ro/contact'], $report['sitemap_urls']);
+        $this->assertTrue($report['google_verification_configured']);
+        $this->assertFalse($report['checks_live_server_or_cloudflare']);
+        $this->assertStringNotContainsString('public-but-omit-value', $output);
+        $this->assertSame(0, $queries);
     }
 }
