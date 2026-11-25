@@ -59,7 +59,11 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'head' => fn () => app(SeoMetadata::class)->head($request),
             'turnstile' => fn () => app(Turnstile::class)->publicConfig(),
-            'cookieSettings' => fn () => ['version' => config('legal.version').':'.(config('cloudflare.analytics_token') ? 'analytics' : 'necessary'), 'analyticsToken' => config('cloudflare.analytics_token'), 'analyticsAllowed' => ! $request->user() && $request->routeIs('home', 'legal.contact')],
+            'cookieSettings' => function () use ($request) {
+                $providers = array_keys(array_filter(['cloudflare' => config('cloudflare.analytics_token'), 'google-tag-manager' => config('analytics.google_tag_manager_id')]));
+
+                return ['version' => config('legal.version').':'.($providers ? 'analytics-'.implode('+', $providers) : 'necessary'), 'analyticsToken' => config('cloudflare.analytics_token'), 'gtmId' => config('analytics.google_tag_manager_id'), 'analyticsAllowed' => ! $request->user() && $request->routeIs('home', 'legal.contact')];
+            },
             'passwordPolicy' => PasswordPolicy::frontend(),
             'legal' => fn () => app(LegalDocuments::class)->publicData(),
             'flash' => ['success' => fn () => $request->session()->get('success'), 'invitation_url' => fn () => $request->session()->get('invitation_url'), 'legal_request' => fn () => $request->session()->get('legal_request'), 'contact_reference' => fn () => $request->session()->get('contact_reference')],

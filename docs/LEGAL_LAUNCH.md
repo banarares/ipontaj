@@ -131,6 +131,6 @@ Versiunea activă este `2026-11-24.3`. Include contactul salvat criptat și info
 
 ## Actualizare 25 noiembrie 2026
 
-Versiunea activă este `2026-11-25.1`, cu explicarea notificărilor interne și confirmării emailului. Versiunile anterioare rămân intacte pentru dovezile existente. Titularul a confirmat dreptul de a comercializa serviciul ca PFA și a asumat transmiterea manuală RO e-Factura folosind datele Stripe. Acest lucru nu este o integrare automată de raportare fiscală.
+Versiunea activă este `2026-11-25.2`, care adaugă Google Analytics prin Google Tag Manager ca analiză opțională, cu acord (cookies, furnizori, confidențialitate). Versiunea `2026-11-25.1` a explicat notificările interne și confirmarea emailului. Versiunile anterioare rămân intacte pentru dovezile existente. Titularul a confirmat dreptul de a comercializa serviciul ca PFA și a asumat transmiterea manuală RO e-Factura folosind datele Stripe. Acest lucru nu este o integrare automată de raportare fiscală.
 
 Limitarea tehnică la chei Stripe test a fost eliminată. Activarea explicită, potrivirea modului cheilor/webhookurilor, prețul exact și condițiile acceptate sunt verificate la checkout; checklistul declarațiilor rămâne un raport pentru operator. Referințele istorice din acest dosar la blocarea exclusivă a plăților live descriu versiunile precedente. Nu s-au bifat automat acordurile sau procedurile neconfirmate.

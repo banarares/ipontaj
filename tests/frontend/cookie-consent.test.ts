@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
     CONSENT_KEY,
     CONSENT_DAYS,
+    cookieDomains,
+    googleAnalyticsCookies,
     readCookieChoice,
     saveCookieChoice,
 } from '../../resources/js/lib/cookieConsent.ts';
@@ -57,4 +59,19 @@ void test('refusal overrides optional analytics and preserves strictly necessary
     assert.equal(c?.choice, 'rejected');
     saveCookieChoice(s, 'v1', 'custom', false, 1002);
     assert.equal(readCookieChoice(s, 'v1', 1003)?.analytics, false);
+});
+void test('withdrawal finds only Google Analytics cookies on every parent domain', () => {
+    assert.deepEqual(
+        googleAnalyticsCookies(
+            'XSRF-TOKEN=a; _ga=GA1.1.1; _ga_ABC123=GS1; _gid=x; _gat_UA-1=1; _gallery=keep; appearance=dark',
+        ),
+        ['_ga', '_ga_ABC123', '_gid', '_gat_UA-1'],
+    );
+    assert.deepEqual(googleAnalyticsCookies(''), []);
+    assert.deepEqual(cookieDomains('www.ipontaj.ro'), [
+        null,
+        'www.ipontaj.ro',
+        'ipontaj.ro',
+    ]);
+    assert.deepEqual(cookieDomains('localhost'), [null]);
 });

@@ -26,6 +26,7 @@ declare module '@inertiajs/core' {
             cookieSettings: {
                 version: string;
                 analyticsToken: string | null;
+                gtmId: string | null;
                 analyticsAllowed: boolean;
             };
             [key: string]: unknown;
