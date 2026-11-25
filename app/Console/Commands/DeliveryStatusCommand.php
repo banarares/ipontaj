@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\Scheduling\CallbackEvent;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +19,9 @@ class DeliveryStatusCommand extends Command
     {
         $this->line(json_encode([
             'queue_connection' => config('queue.default'),
+            'notifications_table_present' => Schema::hasTable('user_notifications'),
+            'proc_open_available' => function_exists('proc_open'),
+            'scheduler_uses_subprocesses' => collect(app(Schedule::class)->events())->contains(fn ($event) => ! $event instanceof CallbackEvent),
             'pending_jobs' => Schema::hasTable('jobs') ? DB::table('jobs')->count() : null,
             'failed_jobs' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : null,
             'worker_last_started_at' => Cache::get('pontaj:queue:last-started'),

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Brand from '@/components/Brand.vue';
 import Icon from '@/components/UiIcon.vue';
 import LegalFooter from '@/components/LegalFooter.vue';
+defineProps<{ errors?: { demo?: string } }>();
+const page = usePage();
+const demoNotice = computed(() =>
+    new URL(page.url, 'http://localhost').searchParams.get('demo') === 'expired'
+        ? 'Sesiunea demo a expirat. Poți porni un demo nou sau crea un cont gratuit.'
+        : '',
+);
 const loading = ref(false);
 function demo() {
     loading.value = true;
@@ -72,6 +79,13 @@ function demo() {
                             }}
                         </button>
                     </div>
+                    <p
+                        v-if="errors?.demo || demoNotice"
+                        class="notice"
+                        role="alert"
+                    >
+                        {{ errors?.demo || demoNotice }}
+                    </p>
                     <div class="hero-trust">
                         <span
                             ><Icon name="check" :size="14" />Gratuit până la 5

@@ -2,11 +2,11 @@
 
 use App\Jobs\SendReminder;
 use App\Models\Company;
-use App\Models\User;
 use App\Services\AttendanceService;
+use App\Services\DemoWorkspaces;
+use App\Support\RunScheduledCommand;
 use Carbon\CarbonImmutable as Carbon;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('pontaj:remind', function (AttendanceService $attendance) {
@@ -37,15 +37,12 @@ Artisan::command('pontaj:remind', function (AttendanceService $attendance) {
     });
     $this->info('Mementourile eligibile au fost trimise în coadă.');
 })->purpose('Mementouri pentru zile neconfirmate, în fusul firmei');
-Artisan::command('pontaj:clean-demo', function () {
-    DB::transaction(function () {
-        Company::where('is_demo', true)->where('created_at', '<', now()->subDay())->delete();
-        User::where('is_demo', true)->where('created_at', '<', now()->subDay())->delete();
-    });
-    $this->info('Datele demo expirate au fost șterse.');
+Artisan::command('pontaj:clean-demo {--dry-run : Afișează numai numărul înregistrărilor eligibile}', function (DemoWorkspaces $demos) {
+    $result = $demos->prune((bool) $this->option('dry-run'));
+    $this->info(($this->option('dry-run') ? 'Previzualizare' : 'Șterse').': '.$result['companies'].' firme demo, '.$result['users'].' utilizatori demo.');
 });
-Schedule::command('pontaj:remind')->everyFifteenMinutes()->withoutOverlapping();
-Schedule::command('pontaj:clean-demo')->hourly()->withoutOverlapping();
-Schedule::command('pontaj:logs:prune --apply')->dailyAt('03:20')
+Schedule::call(new RunScheduledCommand('pontaj:remind'))->name('pontaj:remind')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::call(new RunScheduledCommand('pontaj:clean-demo'))->name('pontaj:clean-demo')->everyTenMinutes()->withoutOverlapping();
+Schedule::call(new RunScheduledCommand('pontaj:logs:prune', ['--apply' => true]))->name('pontaj:logs:prune')->dailyAt('03:20')
     ->when(fn () => config('logging.default') === 'daily' && (int) config('legal.retention.log_days') > 0)
     ->withoutOverlapping();

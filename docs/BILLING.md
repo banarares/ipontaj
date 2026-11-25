@@ -84,3 +84,9 @@ Titularul a confirmat la 24 noiembrie 2026 că PFA-ul nu este înregistrat în s
 Checkoutul cere acceptarea versiunii curente a condițiilor. Pentru spațiile de tip consumator, începerea anticipată este cerută expres, fără o renunțare generală la retragere. O opțiune de începere după 14 zile se gestionează prin contact înaintea comenzii; nu se simulează un trial cu acces imediat drept amânare a prestării.
 
 `checkout.session.completed`, semnat, cu plată confirmată și client/sesiune potrivite, generează o singură confirmare contractuală cu textele acceptate atașate. Testele automate verifică logica și atașamentul; livrarea SMTP reală și momentul efectiv al accesului în întregul flux trebuie verificate înainte de live. Formularele de retragere nu rambursează automat: operatorul identifică solicitarea, oprește plățile și efectuează rambursarea legal datorată, în termen. Vezi [LEGAL_LAUNCH.md](LEGAL_LAUNCH.md).
+
+## Client Stripe fără adresă salvată
+
+Cashier creează sau reutilizează clientul Stripe înainte de inițierea sesiunii. Când este activată colectarea identificatorului fiscal pentru firme, un client fără adresă salvată necesită `customer_update[address]=auto`, pe lângă `billing_address_collection=required`. Checkoutul iPontaj permite salvarea adresei introduse de cumpărător; Cashier setează și actualizarea numelui pentru colectarea identificatorului fiscal. Vezi [cerințele Stripe pentru clienți existenți](https://docs.stripe.com/tax/checkout/tax-ids#existing-customers).
+
+Fără acest parametru, Stripe respinge crearea sesiunii și browserul nu primește URL-ul de redirecționare. Corecția nu necesită modificări `.env`, import SQL sau introducerea manuală a unei adrese fictive în clientul Stripe. Testele simulează validarea Stripe pentru un client fără adresă, atât în test, cât și în live; nu inițiază plăți reale.

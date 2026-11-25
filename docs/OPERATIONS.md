@@ -48,7 +48,31 @@ Repornește procesul de coadă la fiecare release. Rulează permanent `php artis
 
 Pentru contul cPanel al operatorului, executabilul confirmat este `/usr/local/bin/ea-php83`. Exemplele complete de cron, inclusiv workerul limitat în timp și rapoartele private, sunt în [CPANEL_DEPLOY.md](CPANEL_DEPLOY.md).
 
-`pontaj:remind` rulează la 15 minute și verifică fusul firmei, preferințele și starea zilei înainte de notificare. `pontaj:clean-demo` rulează orar. Verifică `php artisan queue:failed` și logurile. Programările nu funcționează fără cron sau `schedule:work`.
+`pontaj:remind` rulează la 15 minute și verifică fusul firmei, preferințele și starea zilei înainte de notificare. `pontaj:clean-demo` rulează la 10 minute. Verifică `php artisan queue:failed` și logurile. Programările nu funcționează fără cron sau `schedule:work`.
+
+## Durata și volumul demo-urilor
+
+Un demo creează un singur utilizator temporar, cu parolă aleatorie și fără adresă reală de email. Ceilalți trei colegi sunt profiluri de pontaj fără cont. Repetarea pornirii în aceeași sesiune o reutilizează; vizitatorii diferiți au firme separate, fără un cont demo comun.
+
+```dotenv
+DEMO_SESSION_MINUTES=60
+DEMO_MAX_WORKSPACES=20
+```
+
+Durata curge de la creare, fără prelungire la fiecare cerere. Configurarea este limitată la 5–1440 minute și 1–200 spații. La ieșirea din demo sau deconectare se șterg firma fictivă, pontajele și utilizatorul temporar. O sesiune expirată nu mai poate modifica pontajul; vizitatorul poate porni alta. Închiderea browserului nu produce un eveniment sigur de ieșire, astfel că demo-urile abandonate sunt curățate de scheduler.
+
+Pornirea unui demo curăță și datele expirate înainte de verificarea capacității, astfel încât acumularea nu depinde exclusiv de cron. O limită atinsă afișează un mesaj fără a mai crea rânduri. Crearea și curățarea folosesc același lock atomic din cache; în producție folosește un cache persistent și comun tuturor proceselor/nodurilor (`database` sau Redis), fără fallback la `array`/`null`. Nu șterge cache-ul în timpul pornirii demo-urilor. Testele pot folosi `array`; acesta nu coordonează procese diferite.
+
+Pentru inspecție și curățare manuală:
+
+```bash
+php artisan pontaj:clean-demo --dry-run
+php artisan pontaj:clean-demo
+```
+
+Comanda acoperă și demo-urile vechi cu patru conturi, utilizatorii demo orfani expirați și sesiunile lor din baza de date. Selectează explicit `is_demo`; nu identifică un cont doar după nume sau email. Păstrează firmele reale, firmele marcate demo care au membri reali, CIF, client Stripe, abonamente sau acceptări contractuale și utilizatorii care mai au apartenențe ori acceptări. Datele protejate neobișnuite necesită revizuire manuală; nu sunt șterse pentru a elibera capacitatea. Limita blochează alocări noi, nu evacuează vizitatori activi când este micșorată.
+
+Nu se modifică baza live printr-un export SQL local. La actualizare păstrează utilizatorii și firmele reale, aplică noul cod și rulează numai comanda de curățare a demo-urilor. Un lock ocupat poate amâna curățarea la deconectare; expirarea și schedulerul o vor relua.
 
 Deduplicarea aplicației previne retrimiterea obișnuită a aceluiași memento/export la retry. Un proces oprit după acceptarea emailului de către SMTP, înainte de salvarea confirmării locale, poate totuși produce o retrimitere; livrarea SMTP nu participă la tranzacția bazei. Testarea cu furnizorul real și monitorizarea rămân necesare.
 

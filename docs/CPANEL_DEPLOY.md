@@ -91,3 +91,41 @@ Pentru contact/invitații/confirmări sunt necesare **ambele cronuri pe minut**:
 ```
 
 Raportul arată numărul joburilor în așteptare/eșuate, ultima execuție a workerului și prezența configurării SMTP. Nu arată parole, destinatari privați sau conținutul joburilor. Dacă există eșuări vechi, repară mai întâi cauza SMTP și verifică joburile înainte de `queue:retry`; joburile deja eșuate nu sunt reluate doar prin pornirea workerului. Pentru portul 465 folosește `MAIL_MAILER=smtp` și `MAIL_SCHEME=smtps`, cu numele SMTP și acreditările oferite de furnizor. Raportul nu dovedește primirea efectivă în inbox.
+
+## Depanare: tabel de notificări, certificat SMTP și proc_open
+
+Un import SQL complet nu este o migrare. Exporturile `mysqldump` pot conține `DROP TABLE` și pot înlocui utilizatorii, firmele și pontajele din baza existentă. Inclusiv exportul `schema`, deși fără conturi, poate recrea tabelele goale. Pentru un site deja live folosește `--database-mode=none`, păstrează baza existentă și aplică migrările PHP după un backup verificat.
+
+Dacă logul indică `user_notifications doesn't exist`, verifică prezența fișierului de migrare și rulează o singură dată prin cron:
+
+```bash
+/usr/local/bin/ea-php83 /home/UTILIZATOR/public_html/artisan migrate --force --path=database/migrations/2026_11_25_000001_create_user_notifications_table.php --no-ansi > /home/UTILIZATOR/ipontaj-migrate.log 2>&1
+```
+
+Această migrare adaugă doar tabelul și indicii notificărilor. Nu folosi `migrate:fresh`, `migrate:refresh` sau un import SQL peste baza live. Raportul trebuie să arate `DONE` sau `Nothing to migrate` pentru migrarea corect aplicată; o eroare nu trebuie ignorată.
+
+`Peer certificate subjectAltName did not match expected name` înseamnă că TLS răspunde, însă certificatul nu acoperă hostname-ul configurat. Folosește serverul SMTP SSL/TLS recomandat în cPanel → Email Accounts → Connect Devices, cu portul/schemă corespunzătoare. Pentru SMTPS pe 465: `MAIL_MAILER=smtp`, `MAIL_SCHEME=smtps`. Păstrează verificarea certificatului și refă `config:cache` după editarea `.env`. Nu dezactiva `verify_peer` sau verificarea hostname-ului. Verificarea publică a unui certificat nu validează acreditările sau livrarea efectivă.
+
+În Cloudflare, hostname-ul de mail trebuie să fie DNS only; și ținta MX trebuie să rezolve direct către serviciul de mail, fără proxy HTTP. Consultă [instrucțiunile Cloudflare](https://developers.cloudflare.com/dns/troubleshooting/email-issues/) și [configurarea clientului din cPanel](https://docs.cpanel.net/cpanel/email/email-accounts/).
+
+Pe reseller, `proc_open` poate fi dezactivat. Schedulerul iPontaj rulează acum comenzile în același proces PHP, prin callbackuri numite cu lock, fără `Schedule::command` sau procese shell. Cronul `schedule:run` rămâne același. Actualizarea trebuie să includă împreună `routes/console.php` și `app/Support/RunScheduledCommand.php`. `pontaj:delivery:status` arată separat prezența tabelului, disponibilitatea `proc_open` și dacă mai există evenimente programate care folosesc subprocese.
+
+Joburile încă în așteptare vor fi reluate de worker după repararea SMTP. Pentru cele mutate deja în `failed_jobs`, verifică lista prin `queue:failed` într-un raport privat și reia doar joburile dorite cu `queue:retry <uuid>`. Nu porni `queue:retry all` fără revizuire. Invitațiile vechi, revocate sau cu token înlocuit sunt omise de verificarea lor la expediere.
+
+## Actualizare numai pentru exportul contabil
+
+Schimbarea celor trei foi XLSX este în `app/Services/ExcelService.php`. Nu necesită migrare, import SQL, modificarea `.env`, dependențe noi sau reconstruirea interfeței. Actualizează fișierul și arhiva publică a sursei AGPL, generată local cu `php artisan pontaj:source:build`, în `storage/app/private/releases/ipontaj-source.zip`. Un pachet restrâns pentru această schimbare nu înlocuiește actualizările anterioare pentru emailuri, scheduler sau notificări.
+
+După încărcare, generează un export nou din Pontaj lunar. Și următoarele exporturi trimise de worker contabilului folosesc acest format. Fișierele XLSX deja generate rămân neschimbate. Exemplul local de verificare folosește doar persoane fictive; nu se importă în baza live. Vezi [formatul exportului](API_EXPORT.md) și [limitele tipurilor de timp din România](RO_ATTENDANCE_REVIEW.md).
+
+## Demo-uri temporare, cu număr limitat
+
+Actualizarea include împreună `DemoWorkspaces`, `DemoController`, `ExpireDemo`, înregistrarea middlewareului și listenerului de logout, `config/ipontaj.php`, `routes/console.php`, buildul frontend și arhiva sursei. Interfața tratează și expirarea detectată prin verificarea notificărilor în fundal. Nu necesită migrare sau import SQL. Valorile implicite sunt 60 de minute și 20 de spații demo; le poți modifica prin `DEMO_SESSION_MINUTES` și `DEMO_MAX_WORKSPACES`. După modificarea configurației refă `config:cache`; păstrează `CACHE_STORE=database` pentru coordonarea proceselor.
+
+Pentru verificarea demo-urilor vechi, adaugă temporar cronul următor, citește raportul în afara directorului public, apoi elimină cronul:
+
+```bash
+/usr/local/bin/ea-php83 /home/UTILIZATOR/public_html/artisan pontaj:clean-demo --dry-run --no-ansi > /home/UTILIZATOR/ipontaj-demo-preview.log 2>&1
+```
+
+Pentru ștergerea numai a demo-urilor eligibile expirate, înlocuiește `--dry-run` cu nimic. Raportul conține doar numerele firmelor și utilizatorilor, fără nume sau emailuri. Cronul permanent `schedule:run`, deja configurat la fiecare minut, execută noua curățare la fiecare 10 minute; nu este necesar un cron permanent suplimentar. [OPERATIONS.md](OPERATIONS.md) descrie limitele și protecțiile.

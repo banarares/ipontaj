@@ -24,6 +24,14 @@ async function refresh() {
             headers: { Accept: 'application/json' },
             cache: 'no-store',
         });
+        if (response.status === 401) {
+            const data = await response.json();
+            if (!stopped && data.reason === 'demo_expired') {
+                stopped = true;
+                window.location.assign('/?demo=expired');
+                return;
+            }
+        }
         if (!response.ok) throw new Error('Unavailable');
         const data = await response.json();
         if (!stopped) {
