@@ -6,6 +6,7 @@ import Icon from '@/components/UiIcon.vue';
 import LegalFooter from '@/components/LegalFooter.vue';
 import LegalRequestForm from '@/components/LegalRequestForm.vue';
 import ContactForm from '@/components/ContactForm.vue';
+import { track } from '@/lib/analytics';
 defineProps<{
     document: { slug: string; title: string; icon: string; html: string };
 }>();
@@ -72,7 +73,13 @@ function printDocument() {
                         <span
                             >Versiunea {{ legal.version }} ·
                             {{ legal.date }}</span
-                        ><a :href="`/documente/${document.slug}`"
+                        ><a
+                            :href="`/documente/${document.slug}`"
+                            @click="
+                                track('file_download', {
+                                    file_name: document.slug,
+                                })
+                            "
                             ><Icon name="download" :size="16" />Descarcă
                             documentul</a
                         ><button
@@ -98,13 +105,25 @@ function printDocument() {
                             </p>
                             <p>{{ legal.operator.address }}</p>
                             <p>
-                                <a :href="`mailto:${legal.operator.email}`">{{
-                                    legal.operator.email
-                                }}</a>
+                                <a
+                                    :href="`mailto:${legal.operator.email}`"
+                                    @click="
+                                        track('contact_click', {
+                                            method: 'email',
+                                        })
+                                    "
+                                    >{{ legal.operator.email }}</a
+                                >
                                 ·
-                                <a :href="`tel:+4${legal.operator.phone}`">{{
-                                    legal.operator.phone
-                                }}</a>
+                                <a
+                                    :href="`tel:+4${legal.operator.phone}`"
+                                    @click="
+                                        track('contact_click', {
+                                            method: 'phone',
+                                        })
+                                    "
+                                    >{{ legal.operator.phone }}</a
+                                >
                             </p>
                             <p>
                                 Neînregistrat în scopuri de TVA ·
@@ -177,9 +196,14 @@ function printDocument() {
                         <p>
                             Pentru detalii suplimentare despre infrastructură
                             sau păstrarea datelor, scrie la
-                            <a :href="`mailto:${legal.operator.email}`">{{
-                                legal.operator.email
-                            }}</a
+                            <a
+                                :href="`mailto:${legal.operator.email}`"
+                                @click="
+                                    track('contact_click', {
+                                        method: 'email',
+                                    })
+                                "
+                                >{{ legal.operator.email }}</a
                             >.
                         </p>
                     </section>

@@ -62,20 +62,44 @@ GOOGLE_TAG_MANAGER_ID=GTM-XXXXXXX
 
 Tokenul beacon este public, dar configurarea rămâne în `.env`. Folosește integrarea manuală și **dezactivează injectarea automată a beaconului din panoul Cloudflare**; o inserare făcută independent la edge nu poate fi controlată de bannerul aplicației.
 
-Beaconul se încarcă numai după acord, pe prezentarea publică și contact, fără navigarea SPA a furnizorului. La părăsirea documentului public cu analiză activă, navigarea GET face o încărcare completă, iar intrarea în demo folosește un POST nativ, pentru a termina ascultătorii înainte de deschiderea contului. Nu încărcăm analiza în ecranele autentificate, login/register, invitații sau recuperarea parolei. Retragerea acordului reîncarcă pagina și păstrează categoria refuzată. Dacă stocarea browserului nu funcționează, analiza rămâne oprită.
+Beaconul se încarcă numai după acord, pentru vizitatorii neautentificați, pe paginile publice: prezentare, contact, documente legale, login, register și cererea de resetare a parolei (`AnalyticsEvents::PUBLIC_ROUTES`). Fără navigarea SPA a furnizorului: la părăsirea documentului public cu analiză activă, navigarea GET face o încărcare completă, intrarea în demo folosește un POST nativ, iar un formular trimis spre cont (login, register) păstrează URL-ul curent până la reîncărcarea completă a paginii de cont, astfel încât analiza nu vede URL-ul contului. Nu încărcăm analiza în ecranele autentificate, invitații, linkurile de resetare a parolei sau de confirmare a emailului; excepția sunt cele trei conversii Google de mai jos. Retragerea acordului reîncarcă pagina și păstrează categoria refuzată. Dacă stocarea browserului nu funcționează, analiza rămâne oprită.
 
-Revizuiește acordurile Cloudflare, transferurile și informarea efectivă înaintea activării pe date reale. Documentele active sunt `2026-11-25.2`; versiunile precedente și dovezile deja acceptate sunt păstrate.
+Revizuiește acordurile Cloudflare, transferurile și informarea efectivă înaintea activării pe date reale. Documentele active sunt `2026-11-27.1`; versiunile precedente și dovezile deja acceptate sunt păstrate.
 
 ### Google Tag Manager / Google Analytics
 
 Nu lipi snippetul GTM în `app.blade.php`: s-ar încărca înaintea acordului și ar fi blocat de CSP. Setează doar `GOOGLE_TAG_MANAGER_ID`; ID-urile care nu au forma `GTM-XXXXXXX` sunt ignorate. Bannerul încarcă `gtm.js` cu nonce CSP, în aceleași condiții ca beaconul Cloudflare, după ce setează Consent Mode v2 cu `analytics_storage: granted` și `ad_storage`, `ad_user_data`, `ad_personalization: denied`. La retragerea acordului, cookie-urile `_ga*`, `_gid` și `_gat*` sunt șterse, iar pagina se reîncarcă.
 
-În containerul GTM:
+#### Evenimente trimise în `dataLayer`
 
-1. Adaugă o etichetă **Google tag** cu ID-ul de măsurare GA4 (`G-…`), declanșată pe **Initialization – All Pages**.
-2. Nu adăuga etichete Google Ads, Floodlight, Meta sau alte pixeli. CSP-ul permite doar `www.googletagmanager.com` pentru scripturi și domeniile Google Analytics pentru colectare; orice alt furnizor va fi blocat și ar necesita actualizarea documentelor legale.
-3. În GA4, la **Admin → Data collection**, lasă **Google signals** și personalizarea reclamelor dezactivate și setează păstrarea datelor la 2 luni sau la durata asumată în documente.
-4. Publică containerul și verifică în **Tag Assistant** că eticheta pornește numai după „Acceptă toate”.
+Evenimentele sunt trimise numai când GTM rulează cu acord. Fiecare push resetează parametrii celorlalte evenimente.
+
+| Eveniment        | Unde                                        | Parametri                                                |
+| ---------------- | ------------------------------------------- | -------------------------------------------------------- |
+| `page_view`      | automat, de Google tag, la fiecare pagină   | —                                                        |
+| `cta_click`      | butoanele spre register/login (home, auth)  | `cta_location`, `cta_destination`                        |
+| `section_click`  | meniul paginii principale                   | `section`                                                |
+| `view_pricing`   | secțiunea de prețuri devine vizibilă        | —                                                        |
+| `demo_start`     | butoanele demo                              | `cta_location`                                           |
+| `contact_click`  | linkurile email/telefon din contact         | `method`                                                 |
+| `generate_lead`  | formularul de contact a fost înregistrat    | `form_name`                                              |
+| `file_download`  | descărcarea unui document legal             | `file_name`                                              |
+| `sign_up`        | contul a fost creat (confirmat de server)   | `method`                                                 |
+| `begin_checkout` | „Alege planul Echipă”, cu termenii bifați   | `ecommerce.currency`, `value`, `items`                   |
+| `purchase`       | întoarcerea din Stripe după checkout reușit | `ecommerce.transaction_id`, `currency`, `value`, `items` |
+
+`sign_up` și `purchase` sunt puse în sesiune de server (`App\Services\AnalyticsEvents`) și livrate o singură dată de browser. `purchase` se emite doar dacă `session_id` primit de la Stripe aparține unei acceptări `checkout` a utilizatorului; `transaction_id` este un hash, nu ID-ul Stripe. În cont, GTM se încarcă doar pentru aceste conversii și pagina se reîncarcă imediat după, fără analiză.
+
+#### Configurare container
+
+1. În GTM: **Admin → Import Container**, alege [`docs/gtm/ipontaj-gtm-container.json`](gtm/ipontaj-gtm-container.json), workspace-ul existent și **Merge → Rename conflicting tags**.
+2. Deschide variabila **const - GA4 Measurement ID** și înlocuiește `G-XXXXXXXXXX` cu ID-ul fluxului web GA4. Containerul conține o etichetă **Google tag** pe **Initialization – All Pages** și două etichete GA4 Event: interacțiunile și `begin_checkout`/`purchase`. Dacă aveai deja un Google tag, șterge-l pe cel vechi ca să nu dublezi `page_view`.
+3. Nu adăuga etichete Google Ads, Floodlight, Meta sau alte pixeli. CSP-ul permite doar `www.googletagmanager.com` pentru scripturi și domeniile Google Analytics pentru colectare; orice alt furnizor va fi blocat și ar necesita actualizarea documentelor legale.
+4. În GA4, la **Admin → Data collection**, lasă **Google signals** și personalizarea reclamelor dezactivate și setează păstrarea datelor la 2 luni sau la durata asumată în documente.
+5. În GA4, la **Admin → Data streams → Web → Enhanced measurement → Page views → Show advanced settings**, dezactivează **Page changes based on browser history events**. Aplicația face încărcări complete când analiza rulează, iar opțiunea ar putea înregistra URL-uri SPA nedorite.
+6. În GA4, la **Admin → Custom definitions**, creează dimensiuni de tip _Event_ pentru `cta_location`, `cta_destination`, `section`, `form_name`, `method`; `file_name` există deja.
+7. În GA4, la **Admin → Events / Key events**, marchează `sign_up`, `generate_lead` și `purchase` ca evenimente-cheie (apar după primul eveniment primit; le poți crea și manual).
+8. Publică containerul și verifică în **Tag Assistant** și **GA4 → Admin → DebugView** că nimic nu pornește înainte de „Acceptă toate” și că evenimentele apar după.
 
 Acceptă condițiile de prelucrare a datelor din GA4 (**Admin → Account settings → Data processing terms**) înainte de activare.
 

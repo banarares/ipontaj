@@ -7,6 +7,7 @@ import Icon from '@/components/UiIcon.vue';
 import DayEditor from '@/components/DayEditor.vue';
 import CompanyIdentityFields from '@/components/CompanyIdentityFields.vue';
 import LegalFooter from '@/components/LegalFooter.vue';
+import { deliver, TEAM_PLAN } from '@/lib/analytics';
 import type {
     Audit,
     Company,
@@ -55,6 +56,17 @@ const billingForm = useForm({
     service_start_requested: false,
     legal_version: page.props.legal.version,
 });
+const checkoutStarting = ref(false);
+async function startCheckout() {
+    if (checkoutStarting.value) return;
+    checkoutStarting.value = true;
+    // Hand the conversion to analytics (only with consent) before leaving for Stripe.
+    if (billingForm.terms_accepted)
+        await deliver([{ event: 'begin_checkout', ecommerce: TEAM_PLAN }]);
+    billingForm.post('/billing/checkout', {
+        onFinish: () => (checkoutStarting.value = false),
+    });
+}
 const flash = computed(
     () => page.props.flash as { success?: string; invitation_url?: string },
 );
@@ -2266,12 +2278,13 @@ const weekdays = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
                                 :disabled="
                                     !billingReady ||
                                     company.is_demo ||
-                                    billingForm.processing
+                                    billingForm.processing ||
+                                    checkoutStarting
                                 "
                                 @click="
                                     subscribed
                                         ? router.post('/billing/portal')
-                                        : billingForm.post('/billing/checkout')
+                                        : startCheckout()
                                 "
                             >
                                 {{

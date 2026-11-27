@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Brand from '@/components/Brand.vue';
 import Icon from '@/components/UiIcon.vue';
 import LegalFooter from '@/components/LegalFooter.vue';
+import { track, trackBeforeLeaving } from '@/lib/analytics';
 defineProps<{ errors?: { demo?: string } }>();
 const page = usePage();
 const demoNotice = computed(() =>
@@ -12,8 +13,27 @@ const demoNotice = computed(() =>
         : '',
 );
 const loading = ref(false);
-function demo() {
+function cta(location: string, destination: 'register' | 'login') {
+    track('cta_click', {
+        cta_location: location,
+        cta_destination: destination,
+    });
+}
+let pricingObserver: IntersectionObserver | undefined;
+onMounted(() => {
+    const pricing = document.getElementById('preturi');
+    if (!pricing || !('IntersectionObserver' in window)) return;
+    pricingObserver = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        track('view_pricing');
+        pricingObserver?.disconnect();
+    });
+    pricingObserver.observe(pricing);
+});
+onBeforeUnmount(() => pricingObserver?.disconnect());
+async function demo(location: string) {
     loading.value = true;
+    await trackBeforeLeaving('demo_start', { cta_location: location });
     if (document.querySelector('script[data-optional-analytics]')) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -46,10 +66,22 @@ function demo() {
         <header class="public-nav">
             <Link href="/"><Brand /></Link>
             <nav class="public-nav-links">
-                <a href="#cum-functioneaza">Cum funcționează</a
-                ><a href="#preturi">Prețuri</a
-                ><Link href="/login">Intră în cont</Link
-                ><Link href="/register" class="button primary"
+                <a
+                    href="#cum-functioneaza"
+                    @click="
+                        track('section_click', { section: 'cum-functioneaza' })
+                    "
+                    >Cum funcționează</a
+                ><a
+                    href="#preturi"
+                    @click="track('section_click', { section: 'preturi' })"
+                    >Prețuri</a
+                ><Link href="/login" @click="cta('nav', 'login')"
+                    >Intră în cont</Link
+                ><Link
+                    href="/register"
+                    class="button primary"
+                    @click="cta('nav', 'register')"
                     >Începe gratuit</Link
                 >
             </nav>
@@ -67,12 +99,15 @@ function demo() {
                         pontajul pregătit pentru contabil.
                     </p>
                     <div class="hero-actions">
-                        <Link href="/register" class="button primary"
+                        <Link
+                            href="/register"
+                            class="button primary"
+                            @click="cta('hero', 'register')"
                             >Creează cont gratuit</Link
                         ><button
                             class="button secondary"
                             :disabled="loading"
-                            @click="demo"
+                            @click="demo('hero')"
                         >
                             <Icon name="calendar" :size="17" />{{
                                 loading ? 'Se pregătește…' : 'Încearcă demo-ul'
@@ -118,7 +153,7 @@ function demo() {
                         <button
                             class="demo-confirm"
                             :disabled="loading"
-                            @click="demo"
+                            @click="demo('hero_card')"
                         >
                             <Icon name="check" :size="18" />Confirmă ziua
                         </button>
@@ -207,7 +242,10 @@ function demo() {
                             <li><Icon name="check" />Mementouri prin email</li>
                             <li><Icon name="check" />Export Excel lunar</li>
                         </ul>
-                        <Link href="/register" class="button secondary full"
+                        <Link
+                            href="/register"
+                            class="button secondary full"
+                            @click="cta('pricing_free', 'register')"
                             >Începe gratuit</Link
                         >
                     </article>
@@ -232,7 +270,10 @@ function demo() {
                                 contabil
                             </li>
                         </ul>
-                        <Link href="/register" class="button primary full"
+                        <Link
+                            href="/register"
+                            class="button primary full"
+                            @click="cta('pricing_team', 'register')"
                             >Creează contul echipei</Link
                         >
                     </article>
@@ -250,7 +291,7 @@ function demo() {
                     <button
                         class="button primary"
                         :disabled="loading"
-                        @click="demo"
+                        @click="demo('final_cta')"
                     >
                         {{
                             loading

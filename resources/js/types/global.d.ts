@@ -1,4 +1,5 @@
 import type { Directive } from 'vue';
+import type { AnalyticsEvent } from '@/lib/analytics';
 import type { Auth } from '@/types/auth';
 import type { LegalData } from '@/types/legal';
 
@@ -29,6 +30,7 @@ declare module '@inertiajs/core' {
                 gtmId: string | null;
                 analyticsAllowed: boolean;
             };
+            analyticsEvents: AnalyticsEvent[];
             [key: string]: unknown;
         };
     }

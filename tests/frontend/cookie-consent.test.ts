@@ -8,6 +8,11 @@ import {
     readCookieChoice,
     saveCookieChoice,
 } from '../../resources/js/lib/cookieConsent.ts';
+import {
+    eventPayload,
+    markDelivered,
+    undeliveredEvents,
+} from '../../resources/js/lib/analytics.ts';
 const storage = () => {
     const data = new Map<string, string>();
     return {
@@ -74,4 +79,27 @@ void test('withdrawal finds only Google Analytics cookies on every parent domain
         'ipontaj.ro',
     ]);
     assert.deepEqual(cookieDomains('localhost'), [null]);
+});
+
+void test('analytics events clear stale parameters and are delivered once', () => {
+    const payload = eventPayload({
+        event: 'cta_click',
+        params: { cta_location: 'hero', email: 'ana@example.test' },
+    });
+    assert.equal(payload.event, 'cta_click');
+    assert.equal(payload.cta_location, 'hero');
+    assert.ok('file_name' in payload && payload.file_name === undefined);
+    assert.ok(!('email' in payload));
+    const store = storage();
+    const events = [
+        { id: 'a', event: 'sign_up' },
+        { id: 'b', event: 'purchase' },
+    ];
+    markDelivered([events[0]], store);
+    assert.deepEqual(
+        undeliveredEvents(events, store).map((event) => event.id),
+        ['b'],
+    );
+    store.setItem('ipontaj:analytics-delivered', '{broken');
+    assert.equal(undeliveredEvents(events, store).length, 2);
 });

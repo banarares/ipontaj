@@ -11,12 +11,16 @@ class PendingEmailVerification
     public function suspend(Request $request, User $user): void
     {
         $intended = $request->session()->get('url.intended');
+        $analytics = $request->session()->get(AnalyticsEvents::SESSION_KEY);
         Auth::guard(config('fortify.guard'))->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         $request->session()->put('pending_verification', ['id' => $user->id, 'hash' => sha1($user->email), 'until' => now()->addHour()->timestamp]);
         if (is_string($intended) && str_starts_with($intended, url('/').'/')) {
             $request->session()->put('url.intended', $intended);
+        }
+        if (is_array($analytics)) {
+            $request->session()->put(AnalyticsEvents::SESSION_KEY, $analytics);
         }
     }
 

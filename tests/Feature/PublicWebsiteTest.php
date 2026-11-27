@@ -147,7 +147,10 @@ class PublicWebsiteTest extends TestCase
         $this->get('/robots.txt')->assertSee('Sitemap: https://ipontaj.ro/sitemap.xml');
         $this->get('/contact')->assertHeaderMissing('X-Robots-Tag');
         $this->get('/login')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-        $this->get('/login')->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', false));
+        foreach (['/', '/contact', '/cookies', '/login', '/register', '/forgot-password'] as $public) {
+            $this->get($public)->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', true));
+        }
+        $this->get('/reset-password/secret-token?email=ana%40example.test')->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', false));
         $this->actingAs(User::factory()->create())->get('/')->assertHeader('X-Robots-Tag', 'noindex, nofollow')->assertInertia(fn ($page) => $page->where('cookieSettings.analyticsAllowed', false));
     }
 
@@ -188,6 +191,18 @@ class PublicWebsiteTest extends TestCase
         }
         putenv('GOOGLE_TAG_MANAGER_ID');
         unset($_ENV['GOOGLE_TAG_MANAGER_ID'], $_SERVER['GOOGLE_TAG_MANAGER_ID']);
+    }
+
+    public function test_sign_up_is_delivered_once_only_when_google_tag_manager_is_configured(): void
+    {
+        $register = fn (string $email) => $this->post('/register', ['terms_accepted' => true, 'legal_version' => config('legal.version'), 'first_name' => 'Ana', 'last_name' => 'Pop', 'email' => $email, 'password' => 'Molid!Vapor7Nori$42', 'password_confirmation' => 'Molid!Vapor7Nori$42'])->assertSessionHasNoErrors();
+        $register('fara-gtm@example.test');
+        $this->get('/email/verify')->assertInertia(fn ($page) => $page->where('analyticsEvents', []));
+        config(['analytics.google_tag_manager_id' => 'GTM-TT8H4579']);
+        // Registration suspends the session until the email is confirmed; the event survives it.
+        $register('cu-gtm@example.test')->assertRedirect('/email/verify');
+        $this->get('/email/verify')->assertInertia(fn ($page) => $page->has('analyticsEvents', 1)->where('analyticsEvents.0.event', 'sign_up')->where('analyticsEvents.0.params.method', 'email')->has('analyticsEvents.0.id')->where('cookieSettings.analyticsAllowed', false));
+        $this->get('/email/verify')->assertInertia(fn ($page) => $page->where('analyticsEvents', []));
     }
 
     public function test_llms_is_public_plain_text_with_canonical_links_and_has_a_singular_alias(): void

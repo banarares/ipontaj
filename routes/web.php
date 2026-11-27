@@ -67,7 +67,7 @@ Route::middleware(['auth', 'throttle:120,1,workspace'])->group(function () {
     Route::patch('/notifications/{notification}/read', [UserNotificationController::class, 'read']);
     Route::post('/notifications/read-all', [UserNotificationController::class, 'readAll']);
     Route::get('/dashboard', [WorkspaceController::class, 'index'])->name('dashboard');
-    foreach (['today', 'history', 'team', 'month', 'settings', 'billing'] as $section) {
+    foreach (['today', 'history', 'team', 'month', 'settings'] as $section) {
         Route::get('/'.$section, fn (Request $request) => app(WorkspaceController::class)->index($request, $section))->name('workspace.'.$section);
     }
     Route::get('/company-lookup', CompanyLookupController::class)->middleware('throttle:10,1,company-lookup');
@@ -87,6 +87,7 @@ Route::middleware(['auth', 'throttle:120,1,workspace'])->group(function () {
     Route::post('/invitations', [InvitationController::class, 'store'])->middleware('throttle:10,1,invitations');
     Route::delete('/invitations/{invitation}', [InvitationController::class, 'revoke']);
     Route::post('/invite/{token}', [InvitationController::class, 'accept']);
+    Route::get('/billing', [BillingController::class, 'show'])->name('workspace.billing');
     Route::post('/billing/checkout', [BillingController::class, 'checkout']);
     Route::post('/billing/portal', [BillingController::class, 'portal']);
 });

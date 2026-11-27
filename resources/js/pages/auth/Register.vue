@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { track } from '@/lib/analytics';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AuthShell from '@/components/AuthShell.vue';
 import NewPasswordField from '@/components/NewPasswordField.vue';
@@ -158,7 +159,17 @@ const form = useForm({
             </button>
         </form>
         <p class="auth-switch">
-            Ai deja un cont? <Link href="/login">Intră în cont</Link>
+            Ai deja un cont?
+            <Link
+                href="/login"
+                @click="
+                    track('cta_click', {
+                        cta_location: 'register_page',
+                        cta_destination: 'login',
+                    })
+                "
+                >Intră în cont</Link
+            >
         </p></AuthShell
     >
 </template>
