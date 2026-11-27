@@ -86,6 +86,25 @@ class BillingTest extends TestCase
         $this->post('/billing/portal')->assertStatus(409)->assertHeader('X-Inertia-Location', 'https://billing.stripe.com/p/session/fixture');
     }
 
+    public function test_returning_from_stripe_delivers_purchase_once_only_for_the_users_own_session(): void
+    {
+        config(['analytics.google_tag_manager_id' => 'GTM-TT8H4579']);
+        [$user, $company] = $this->company();
+        $client = $this->stripe();
+        $this->actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post('/billing/checkout', ['terms_accepted' => true, 'legal_version' => config('legal.version')])->assertStatus(409);
+        $sessions = array_values(array_filter($client->calls, fn ($c) => str_contains($c['url'], 'checkout/sessions')));
+        $this->assertStringEndsWith('/billing?checkout=returned&session_id={CHECKOUT_SESSION_ID}', $sessions[0]['params']['success_url']);
+        $this->flushHeaders();
+        LegalAcceptance::where('purpose', 'checkout')->firstOrFail()->update(['facts' => ['checkout_session_id' => 'cs_test_owned']]);
+        [$other] = $this->company();
+        $this->actingAs($other)->get('/billing?checkout=returned&session_id=cs_test_owned')->assertRedirect('/billing?checkout=returned');
+        $this->get('/billing?checkout=returned')->assertInertia(fn ($page) => $page->where('analyticsEvents', []));
+        $this->actingAs($user)->get('/billing?checkout=returned&session_id=cs_test_owned')->assertRedirect('/billing?checkout=returned');
+        $this->get('/billing?checkout=returned')->assertInertia(fn ($page) => $page->where('analyticsEvents.0.event', 'purchase')->where('analyticsEvents.0.ecommerce.currency', 'RON')->where('analyticsEvents.0.ecommerce.value', 49)->where('analyticsEvents.0.ecommerce.transaction_id', fn ($id) => str_starts_with($id, 'T-') && ! str_contains($id, 'cs_test')));
+        $this->get('/billing?checkout=returned&session_id=cs_test_owned')->assertRedirect('/billing?checkout=returned');
+        $this->get('/billing?checkout=returned')->assertInertia(fn ($page) => $page->where('analyticsEvents', []));
+    }
+
     public function test_live_checkout_in_production_records_real_mode_without_falsifying_operator_confirmations(): void
     {
         [$user, $company] = $this->company(true);

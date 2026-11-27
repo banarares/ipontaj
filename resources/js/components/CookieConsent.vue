@@ -9,18 +9,24 @@ import {
     watch,
 } from 'vue';
 import {
+    analyticsMode,
+    appendScript,
+    configureAnalytics,
+    deliver,
+    loadGoogleTagManager,
+    markDelivered,
+    undeliveredEvents,
+    type AnalyticsEvent,
+} from '@/lib/analytics';
+import {
     cookieDomains,
     googleAnalyticsCookies,
     readCookieChoice,
     saveCookieChoice,
     type CookieChoice,
 } from '@/lib/cookieConsent';
-declare global {
-    interface Window {
-        dataLayer?: unknown[];
-    }
-}
-const settings = computed(() => usePage().props.cookieSettings);
+const page = usePage();
+const settings = computed(() => page.props.cookieSettings);
 const available = computed(
     () => !!settings.value.analyticsToken || !!settings.value.gtmId,
 );
@@ -42,22 +48,6 @@ const panel = ref<HTMLElement | null>(null);
 let observer: ResizeObserver | undefined;
 let beaconLoaded = false;
 let removeVisitListener: (() => void) | undefined;
-function appendScript(src: string, configure: (s: HTMLScriptElement) => void) {
-    const script = document.createElement('script');
-    configure(script);
-    script.src = src;
-    const nonce = document.querySelector<HTMLMetaElement>(
-        'meta[name="csp-nonce"]',
-    )?.content;
-    if (nonce) script.nonce = nonce;
-    document.head.appendChild(script);
-}
-function gtag(...args: unknown[]) {
-    void args;
-    // GTM recognises gtag commands only as an Arguments object, not as an array.
-    // eslint-disable-next-line prefer-rest-params
-    window.dataLayer?.push(arguments);
-}
 function activateAnalytics() {
     if (
         !analytics.value ||
@@ -79,26 +69,25 @@ function activateAnalytics() {
                 script.defer = true;
             },
         );
-    if (gtmId) {
-        window.dataLayer = window.dataLayer || [];
-        // Consent Mode v2: the visitor accepted statistics only, never advertising.
-        gtag('consent', 'default', {
-            analytics_storage: 'granted',
-            ad_storage: 'denied',
-            ad_user_data: 'denied',
-            ad_personalization: 'denied',
-        });
-        window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
-        appendScript(
-            'https://www.googletagmanager.com/gtm.js?id=' +
-                encodeURIComponent(gtmId),
-            (script) => {
-                script.dataset.optionalAnalytics = 'google-tag-manager';
-                script.async = true;
-            },
-        );
-    }
+    if (gtmId) loadGoogleTagManager('page');
     beaconLoaded = true;
+}
+function analyticsLoaded() {
+    return beaconLoaded || analyticsMode() !== 'off';
+}
+// Conversions confirmed by the server (sign-up, purchase) are sent once, with consent only.
+function deliverConversions(events: AnalyticsEvent[]): Promise<boolean> {
+    let store: Storage;
+    try {
+        store = window.sessionStorage;
+    } catch {
+        return Promise.resolve(false);
+    }
+    const pending = undeliveredEvents(events, store);
+    if (!pending.length) return Promise.resolve(false);
+    markDelivered(pending, store);
+
+    return deliver(pending);
 }
 function removeGoogleCookies() {
     for (const name of googleAnalyticsCookies(document.cookie)) {
@@ -115,6 +104,10 @@ function loadPreference() {
         /* Storage can be unavailable. Optional analytics stays off. */
     }
     analytics.value = !!value?.analytics && available.value;
+    configureAnalytics({
+        gtmId: settings.value.gtmId,
+        consented: analytics.value,
+    });
     visible.value = !value;
     if (analytics.value) activateAnalytics();
     else removeGoogleCookies();
@@ -144,6 +137,7 @@ function choose(choice: CookieChoice['choice']) {
         return;
     }
     analytics.value = allowed;
+    configureAnalytics({ gtmId: settings.value.gtmId, consented: allowed });
     visible.value = false;
     details.value = false;
     if (!allowed) removeGoogleCookies();
@@ -185,19 +179,56 @@ watch(
         else loadPreference();
     },
 );
+let removeUpdateListener: (() => void) | undefined;
+let removeNavigateListener: (() => void) | undefined;
 onMounted(() => {
     loadPreference();
+    void deliverConversions(page.props.analyticsEvents).then((sent) => {
+        // Unload Google from account pages once the conversion has been handed over.
+        if (sent && analyticsMode() === 'conversion')
+            window.location.replace(window.location.href);
+    });
     window.addEventListener('ipontaj:cookie-settings', open);
     removeVisitListener = router.on('before', (event) => {
         // Leave the public analytics document before visiting account/private URLs.
-        if (beaconLoaded && event.detail.visit.method === 'get') {
+        if (analyticsLoaded() && event.detail.visit.method === 'get') {
             event.preventDefault();
             window.location.assign(event.detail.visit.url.href);
         }
     });
+    removeUpdateListener = router.on('beforeUpdate', (event) => {
+        // A form posted from a public page (login, sign-up) can land in the account.
+        // Keep the current URL so analytics records no account page, hand over the
+        // conversions, then load the account page again without analytics.
+        const next = event.detail.page;
+        const target = new URL(next.url, window.location.href);
+        if (
+            analyticsLoaded() &&
+            !next.props.cookieSettings.analyticsAllowed &&
+            target.pathname !== window.location.pathname
+        ) {
+            const events = next.props.analyticsEvents;
+            next.props.analyticsEvents = [];
+            next.url = window.location.href;
+            void deliverConversions(events).finally(() =>
+                window.location.replace(target.href),
+            );
+        }
+    });
+    removeNavigateListener = router.on('navigate', (event) => {
+        if (event.detail.type === 'initial') return;
+        void deliverConversions(event.detail.page.props.analyticsEvents).then(
+            (sent) => {
+                if (sent && analyticsMode() === 'conversion')
+                    window.location.replace(window.location.href);
+            },
+        );
+    });
 });
 onBeforeUnmount(() => {
     removeVisitListener?.();
+    removeUpdateListener?.();
+    removeNavigateListener?.();
     observer?.disconnect();
     window.removeEventListener('ipontaj:cookie-settings', open);
     document.documentElement.style.removeProperty('--cookie-panel-height');

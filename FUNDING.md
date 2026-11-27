@@ -16,11 +16,11 @@ Contribuțiile financiare ne-ar permite să accelerăm dezvoltarea și să facem
 
 ### Unde vrem să investim
 
-| Domeniu | Alocare orientativă |
-|---|---:|
-| Promovare și atragerea primilor utilizatori | 60% |
-| Dezvoltare, corectarea erorilor și testare | 30% |
-| Hosting, email și infrastructură | 10% |
+| Domeniu                                     | Alocare orientativă |
+| ------------------------------------------- | ------------------: |
+| Promovare și atragerea primilor utilizatori |                 60% |
+| Dezvoltare, corectarea erorilor și testare  |                 30% |
+| Hosting, email și infrastructură            |                 10% |
 
 Aceste procente reprezintă intenții de alocare, nu cheltuieli deja efectuate sau angajamente contractuale.
 
@@ -28,16 +28,16 @@ Aceste procente reprezintă intenții de alocare, nu cheltuieli deja efectuate s
 
 ### ❤️ GitHub Sponsors
 
-Ne propunem să folosim GitHub Sponsors pentru contribuții lunare sau unice.
+Poți susține proiectul prin contribuții lunare sau unice pe GitHub Sponsors:
 
-**Activarea profilului de sponsorizare este în curs de pregătire.** Vom publica aici linkul direct după ce acesta devine funcțional.
+**👉 [github.com/sponsors/banarares](https://github.com/sponsors/banarares)**
 
 Niveluri de susținere propuse:
 
-| Contribuție | Ce susține |
-|---|---|
-| 3 EUR/lună | Hosting și întreținere |
-| 10 EUR/lună | Testare și îmbunătățiri |
+| Contribuție | Ce susține                           |
+| ----------- | ------------------------------------ |
+| 3 EUR/lună  | Hosting și întreținere               |
+| 10 EUR/lună | Testare și îmbunătățiri              |
 | 25 EUR/lună | Dezvoltarea și promovarea produsului |
 
 Indiferent de sumă, fiecare contribuție este apreciată. Susținerea financiară nu oferă acces privilegiat la datele utilizatorilor și nu reprezintă achiziționarea unui abonament comercial.

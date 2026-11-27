@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { track } from '@/lib/analytics';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AuthShell from '@/components/AuthShell.vue';
@@ -80,7 +81,17 @@ function submit() {
             </button>
         </form>
         <p class="auth-switch">
-            Nu ai încă un cont? <Link href="/register">Începe gratuit</Link>
+            Nu ai încă un cont?
+            <Link
+                href="/register"
+                @click="
+                    track('cta_click', {
+                        cta_location: 'login_page',
+                        cta_destination: 'register',
+                    })
+                "
+                >Începe gratuit</Link
+            >
         </p></AuthShell
     >
 </template>

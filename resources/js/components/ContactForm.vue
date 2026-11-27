@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { track } from '@/lib/analytics';
 import TurnstileWidget from './TurnstileWidget.vue';
 const page = usePage();
 const reference = computed(
@@ -20,7 +21,11 @@ const form = useForm({
 function send() {
     form.post('/contact', {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
+        onSuccess: () => {
+            if (reference.value)
+                track('generate_lead', { form_name: 'contact' });
+            form.reset();
+        },
         onFinish: () => challenge.value?.reset(),
     });
 }

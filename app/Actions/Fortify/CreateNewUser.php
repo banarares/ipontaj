@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Services\AnalyticsEvents;
 use App\Services\LegalAgreements;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -29,7 +30,7 @@ class CreateNewUser implements CreatesNewUsers
             'legal_version' => ['required', Rule::in([config('legal.version')])],
         ])->validate();
 
-        return DB::transaction(function () use ($input) {
+        $user = DB::transaction(function () use ($input) {
             $user = User::create([
                 'first_name' => $input['first_name'],
                 'last_name' => $input['last_name'],
@@ -40,5 +41,8 @@ class CreateNewUser implements CreatesNewUsers
 
             return $user;
         });
+        app(AnalyticsEvents::class)->queue(request(), 'sign_up', ['method' => 'email']);
+
+        return $user;
     }
 }
